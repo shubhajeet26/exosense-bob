@@ -44,14 +44,21 @@ export default function IntroSequence({ onComplete }: IntroSequenceProps) {
           exit={{ opacity: 0 }}
           transition={{ duration: 0.8, ease: "easeInOut" }}
         >
-          {/* ── Background video ── */}
+          {/* ── Background video ──
+               Requires: public/videos/intro.mp4
+               autoPlay requires muted (enforced by browsers).
+               onError is logged so it shows up in the server/browser console. */}
           <video
+            key="/videos/intro.mp4"
             autoPlay
             muted
             loop
             playsInline
             className="absolute inset-0 w-full h-full object-cover"
             style={{ filter: "brightness(0.45) saturate(1.2)" }}
+            onError={(e) =>
+              console.warn("[IntroSequence] video failed to load:", e)
+            }
           >
             <source src="/videos/intro.mp4" type="video/mp4" />
           </video>
