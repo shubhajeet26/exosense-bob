@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { FilterParams } from "@/lib/nasa";
 
 // Known discovery methods in the archive
@@ -128,13 +129,16 @@ export default function FilterControls({ values, onChange, isLoading }: Props) {
         <h2 className="text-xs tracking-widest uppercase text-[var(--accent-cyan)] font-semibold">
           Filters
         </h2>
-        <button
+        <motion.button
           onClick={reset}
           disabled={isLoading}
           className="text-[0.65rem] tracking-wider uppercase text-[var(--muted)] hover:text-[var(--foreground)] transition-colors disabled:opacity-40 cursor-pointer"
+          whileHover={isLoading ? {} : { scale: 1.08 }}
+          whileTap={isLoading   ? {} : { scale: 0.94 }}
+          transition={{ duration: 0.12 }}
         >
           Reset
-        </button>
+        </motion.button>
       </div>
 
       {/* Discovery year */}
