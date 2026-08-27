@@ -22,6 +22,7 @@ import WorldComparison from "../comparison/WorldComparison";
 import DiscoveryCenter from "../discovery/DiscoveryCenter";
 import DiscoveryTimeline from "../discovery/DiscoveryTimeline";
 import MyMission from "../favorites/MyMission";
+import MissionIntelligence from "../intelligence/MissionIntelligence";
 import { NavTab } from "../AppHeader";
 import { useFavorites } from "@/lib/useFavorites";
 
@@ -236,7 +237,31 @@ export default function Dashboard({
         </motion.div>
       )}
 
-      {/* ── View 2: Discovery Center ── */}
+      {/* ── View 2: Mission Intelligence ── */}
+      {activeTab === "intelligence" && (
+        <motion.div
+          key="intelligence-view"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="w-full"
+        >
+          <MissionIntelligence
+            allPlanets={planets}
+            filteredPlanets={planets}
+            selectedPlanet={selectedPlanet}
+            favoriteNames={favoriteNames}
+            onToggleFavorite={toggleFavorite}
+            onNavigateToObservatory={handleOpenObservatory}
+            onNavigateToCompare={handleOpenCompare}
+            onNavigateToStarMapWithTarget={handleOpenStarMapWithTarget}
+            onNavigateToDiscovery={() => onTabChange?.("discovery")}
+          />
+        </motion.div>
+      )}
+
+      {/* ── View 3: Discovery Center ── */}
       {activeTab === "discovery" && (
         <motion.div
           key="discovery-view"
@@ -255,14 +280,13 @@ export default function Dashboard({
             onNavigateToStarMapWithTarget={handleOpenStarMapWithTarget}
             onNavigateToTimeline={() => onTabChange?.("timeline")}
             onAskCopilot={(query) => {
-              // Switch to dashboard and submit
               if (onTabChange) onTabChange("dashboard");
             }}
           />
         </motion.div>
       )}
 
-      {/* ── View 3: Discovery Timeline ── */}
+      {/* ── View 4: Discovery Timeline ── */}
       {activeTab === "timeline" && (
         <motion.div
           key="timeline-view"
@@ -280,7 +304,7 @@ export default function Dashboard({
         </motion.div>
       )}
 
-      {/* ── View 4: Planet Observatory ── */}
+      {/* ── View 5: Planet Observatory ── */}
       {activeTab === "observatory" && (
         <motion.div
           key="observatory-view"
@@ -306,7 +330,7 @@ export default function Dashboard({
         </motion.div>
       )}
 
-      {/* ── View 5: World Comparison ── */}
+      {/* ── View 6: World Comparison ── */}
       {activeTab === "compare" && (
         <motion.div
           key="compare-view"
@@ -327,7 +351,7 @@ export default function Dashboard({
         </motion.div>
       )}
 
-      {/* ── View 6: My Mission (Favorites) ── */}
+      {/* ── View 7: My Mission (Favorites) ── */}
       {activeTab === "favorites" && (
         <motion.div
           key="favorites-view"
@@ -350,7 +374,7 @@ export default function Dashboard({
         </motion.div>
       )}
 
-      {/* ── View 7: Mission Control Dashboard ── */}
+      {/* ── View 8: Mission Control Dashboard ── */}
       {activeTab === "dashboard" && (
         <motion.div
           key="dashboard-view"

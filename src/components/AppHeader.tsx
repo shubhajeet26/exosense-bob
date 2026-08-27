@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 export type NavTab =
   | "dashboard"
   | "starmap"
+  | "intelligence"
   | "discovery"
   | "timeline"
   | "observatory"
@@ -90,7 +91,7 @@ export default function AppHeader({
               EXOSENSE
             </span>
             <span className="text-[0.55rem] px-1.5 py-0.5 rounded bg-[var(--accent-blue)]/15 border border-[var(--accent-blue)]/30 text-[var(--accent-cyan-bright)] tracking-widest font-semibold uppercase">
-              SYS.V9
+              SYS.V11
             </span>
           </div>
         </div>
@@ -121,6 +122,18 @@ export default function AppHeader({
           >
             <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-cyan-bright)] animate-pulse" />
             <span>STAR MAP</span>
+          </button>
+
+          <button
+            onClick={() => onTabChange("intelligence")}
+            className={`px-2.5 py-1 rounded transition-all flex items-center gap-1.5 cursor-pointer text-[0.68rem] ${
+              activeTab === "intelligence"
+                ? "bg-[var(--accent-cyan)]/20 text-[var(--accent-cyan-bright)] border border-[var(--accent-cyan)]/50 font-bold shadow-[0_0_12px_rgba(6,182,212,0.3)]"
+                : "text-[var(--muted-light)] hover:text-white border border-transparent"
+            }`}
+          >
+            <span>⚡</span>
+            <span>INTELLIGENCE</span>
           </button>
 
           <button
