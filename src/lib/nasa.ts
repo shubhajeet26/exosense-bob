@@ -117,8 +117,6 @@ export async function fetchExoplanets(
 ): Promise<Exoplanet[]> {
   const url = buildTapUrl(filters);
 
-  console.log("[nasa] TAP URL:", url);
-
   const res = await fetchFn(url, {
     headers: { Accept: "application/json" },
     // Next.js cache: revalidate every 6 hours (data doesn't change intraday)
