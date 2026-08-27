@@ -338,6 +338,107 @@ export default function PlanetObservatory({
             </div>
           </HudPanel>
 
+          {/* Visual Size Scale & Habitable Zone Architecture */}
+          <HudPanel
+            title="Physical Scale & Habitable Zone Profile"
+            moduleCode="SCALE-HZ"
+            badge={{ text: "COMPARATIVE METRICS", variant: "cyan" }}
+            cornerAccent="cyan"
+          >
+            <div className="space-y-4">
+              {/* Planetary Radius Silhouette Comparison */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[0.6rem] text-[var(--muted-light)] uppercase font-bold">
+                  <span>RELATIVE PHYSICAL SCALE (EARTH vs TARGET vs JUPITER)</span>
+                  <span className="text-[var(--accent-cyan-bright)]">
+                    {activePlanet.pl_rade != null ? `${activePlanet.pl_rade.toFixed(2)} R⊕` : "RADIUS ?"}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-lg bg-[#020512] border border-[var(--border)] flex items-end justify-around gap-2 h-24">
+                  {/* Earth (1.00 R⊕) */}
+                  <div className="flex flex-col items-center gap-1">
+                    <div
+                      className="rounded-full bg-blue-500/80 border border-blue-300 shadow-[0_0_8px_#3b82f6]"
+                      style={{ width: 20, height: 20 }}
+                    />
+                    <span className="text-[0.55rem] text-[var(--muted-light)]">Earth (1.0 R⊕)</span>
+                  </div>
+
+                  {/* Target Planet */}
+                  <div className="flex flex-col items-center gap-1">
+                    {activePlanet.pl_rade != null ? (
+                      <div
+                        className="rounded-full bg-[var(--accent-cyan)] border border-white/80 shadow-[0_0_12px_rgba(6,182,212,0.6)]"
+                        style={{
+                          width: Math.min(Math.max(activePlanet.pl_rade * 20, 10), 64),
+                          height: Math.min(Math.max(activePlanet.pl_rade * 20, 10), 64),
+                        }}
+                      />
+                    ) : (
+                      <div
+                        className="rounded-full border border-dashed border-[var(--muted)] flex items-center justify-center text-[0.5rem] text-[var(--muted)]"
+                        style={{ width: 24, height: 24 }}
+                      >
+                        ?
+                      </div>
+                    )}
+                    <span className="text-[0.55rem] font-bold text-[var(--accent-cyan-bright)] truncate max-w-[110px]">
+                      {activePlanet.pl_name} ({activePlanet.pl_rade != null ? `${activePlanet.pl_rade.toFixed(2)} R⊕` : "—"})
+                    </span>
+                  </div>
+
+                  {/* Jupiter (11.20 R⊕) */}
+                  <div className="flex flex-col items-center gap-1">
+                    <div
+                      className="rounded-full bg-amber-600/40 border border-amber-400"
+                      style={{ width: 56, height: 56 }}
+                    />
+                    <span className="text-[0.55rem] text-[var(--muted-light)]">Jupiter (11.2 R⊕)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Habitable Zone Thermal Gauge */}
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-[0.6rem] text-[var(--muted-light)] uppercase font-bold">
+                  <span>THERMAL REGIME // GOLDILOCKS ZONE</span>
+                  <span className="text-[var(--accent-violet-bright)]">
+                    {activePlanet.pl_eqt != null ? `${activePlanet.pl_eqt.toFixed(0)} K` : "TEMP UNAVAILABLE"}
+                  </span>
+                </div>
+
+                <div className="space-y-1 p-2.5 rounded-lg bg-[#020512] border border-[var(--border)]">
+                  <div className="h-3 rounded overflow-hidden flex text-[0.5rem] font-bold text-center text-black font-mono">
+                    <div className="w-1/3 bg-gradient-to-r from-blue-500 to-cyan-400 flex items-center justify-center opacity-85">
+                      CRYO (&lt;200K)
+                    </div>
+                    <div className="w-1/3 bg-emerald-400 flex items-center justify-center shadow-inner">
+                      HABITABLE (200-350K)
+                    </div>
+                    <div className="w-1/3 bg-gradient-to-r from-amber-400 to-red-500 flex items-center justify-center opacity-85">
+                      HOT (&gt;350K)
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between text-[0.55rem] text-[var(--muted)] pt-0.5">
+                    <span>Extreme Cold</span>
+                    <span className="text-emerald-400 font-semibold">
+                      {activePlanet.pl_eqt != null && activePlanet.pl_eqt >= 200 && activePlanet.pl_eqt <= 350
+                        ? "✓ INSIDE TEMPERATE RANGE"
+                        : activePlanet.pl_eqt != null && activePlanet.pl_eqt > 350
+                        ? "⚠ HYPER-THERMAL REGIME"
+                        : activePlanet.pl_eqt != null
+                        ? "⚠ SUB-FREEZE REGIME"
+                        : "UNMEASURED IN NASA ARCHIVE"}
+                    </span>
+                    <span>Extreme Heat</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </HudPanel>
+
           {/* Stylized Orbital Architecture Diagram */}
           <HudPanel
             title="Orbital Architecture"

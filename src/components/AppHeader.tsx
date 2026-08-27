@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useTheme, ThemeMode } from "@/lib/useTheme";
 
 export type NavTab =
   | "dashboard"
@@ -33,6 +34,7 @@ export default function AppHeader({
   isDemoActive = false,
 }: AppHeaderProps) {
   const [timeString, setTimeString] = useState("");
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     function updateClock() {
@@ -56,6 +58,9 @@ export default function AppHeader({
     const interval = setInterval(updateClock, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const themeLabel =
+    theme === "obsidian" ? "🌌 OBSIDIAN" : theme === "jwst" ? "🛰️ JWST GOLD" : "🔬 ACADEMIC";
 
   return (
     <motion.header
@@ -237,6 +242,15 @@ export default function AppHeader({
             ⚡ DEMO
           </button>
         )}
+
+        {/* Theme Switcher */}
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#060c28] hover:bg-[#0c1844] border border-[var(--border)] text-[0.62rem] text-[var(--accent-cyan-bright)] font-bold transition-all cursor-pointer shadow-sm"
+          title="Switch Visual Theme Preset (Obsidian / JWST Gold / Academic)"
+        >
+          <span>{themeLabel}</span>
+        </button>
 
         <div className="hidden xl:flex items-center gap-1.5 px-2 py-1 rounded bg-[#070d22] border border-[var(--border)] text-[0.65rem] text-[var(--muted-light)]">
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-cyan)] animate-pulse" />
