@@ -10,9 +10,10 @@ import FilterControls, {
   DEFAULT_FILTERS,
   toApiParams,
 } from "./FilterControls";
+import NlQueryBar from "./NlQueryBar";
 import DataTable from "./DataTable";
 import { LoadingState, EmptyState, ErrorState } from "./States";
-import AiMissionCopilot, { AnnotationStatus } from "./AiMissionCopilot";
+import AiMissionCopilot from "./AiMissionCopilot";
 import MissionTelemetryBar from "./MissionTelemetryBar";
 import { type ProfileStatus } from "./PlanetViewer";
 import StarMapExplorer from "../starmap/StarMapExplorer";
@@ -54,18 +55,6 @@ function buildQueryString(filters: FilterValues): string {
   return qs.toString();
 }
 
-function filterSummary(f: FilterValues): string {
-  const parts: string[] = [];
-  if (f.yearMin !== DEFAULT_FILTERS.yearMin || f.yearMax !== DEFAULT_FILTERS.yearMax)
-    parts.push(`years ${f.yearMin}–${f.yearMax}`);
-  if (f.radiusMin > 0 || f.radiusMax < 30)
-    parts.push(`radius ${f.radiusMin}–${f.radiusMax} R⊕`);
-  if (f.discoveryMethod) parts.push(`method: ${f.discoveryMethod}`);
-  if (f.distanceMin > 0 || f.distanceMax < 3000)
-    parts.push(`distance ${f.distanceMin}–${f.distanceMax} pc`);
-  return parts.length ? parts.join(", ") : "all planets (default filters)";
-}
-
 export default function Dashboard({
   activeTab = "dashboard",
   onTabChange,
@@ -76,11 +65,6 @@ export default function Dashboard({
   const [errorMsg, setErrorMsg] = useState("");
   const [selectedPlanet, setSelectedPlanet] = useState<Exoplanet | null>(null);
   const dataDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const [annotation, setAnnotation] = useState<string | null>(null);
-  const [annotationStatus, setAnnotationStatus] = useState<AnnotationStatus>("idle");
-  const [annotationError, setAnnotationError] = useState<string | null>(null);
-  const annotDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [profile, setProfile] = useState<string | null>(null);
   const [profileStatus, setProfileStatus] = useState<ProfileStatus>("idle");
@@ -120,47 +104,6 @@ export default function Dashboard({
       setSelectedPlanet(null);
     }
   }, [planets, selectedPlanet]);
-
-  // ── Gemini Dataset Annotation ──
-  const fetchAnnotation = useCallback(async (data: Exoplanet[], filt: FilterValues) => {
-    if (data.length === 0) {
-      setAnnotationStatus("idle");
-      setAnnotation(null);
-      return;
-    }
-    setAnnotationStatus("loading");
-    setAnnotationError(null);
-    try {
-      const res = await fetch("/api/ai/annotate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planets: data, filterSummary: filterSummary(filt) }),
-      });
-      const json = await res.json();
-      if (json.annotation) {
-        setAnnotation(json.annotation);
-        setAnnotationStatus("success");
-      } else if (json.error?.includes("GEMINI_API_KEY")) {
-        setAnnotationStatus("no-key");
-        setAnnotationError(json.error);
-      } else {
-        setAnnotationStatus("error");
-        setAnnotationError(json.error ?? "AI annotation unavailable.");
-      }
-    } catch {
-      setAnnotationStatus("error");
-      setAnnotationError("Network link to Gemini AI interrupted.");
-    }
-  }, []);
-
-  useEffect(() => {
-    if (status !== "success") return;
-    if (annotDebounceRef.current) clearTimeout(annotDebounceRef.current);
-    annotDebounceRef.current = setTimeout(() => fetchAnnotation(planets, filters), 1800);
-    return () => {
-      if (annotDebounceRef.current) clearTimeout(annotDebounceRef.current);
-    };
-  }, [planets, status, filters, fetchAnnotation]);
 
   // ── Planet Selection & AI Profile ──
   const handleSelectPlanet = useCallback((planet: Exoplanet | null) => {
@@ -242,9 +185,6 @@ export default function Dashboard({
             selectedPlanet={selectedPlanet}
             onSelectPlanet={handleSelectPlanet}
             onOpenObservatory={handleOpenObservatory}
-            profile={profile}
-            profileStatus={profileStatus}
-            profileError={profileError}
           />
         </motion.div>
       )}
@@ -269,8 +209,8 @@ export default function Dashboard({
 
           {/* Mission Control Main Composition */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-            {/* Left / Center Zone: Main Observational Focal Area (8 cols) */}
-            <div className="lg:col-span-8 flex flex-col gap-5">
+            {/* Left / Center Zone: Main Observational Focal Area (7 cols on desktop) */}
+            <div className="lg:col-span-7 flex flex-col gap-5">
               {/* Target Observatory (if selected) */}
               <AnimatePresence mode="wait">
                 {selectedPlanet && (
@@ -300,16 +240,24 @@ export default function Dashboard({
               />
             </div>
 
-            {/* Right Zone: AI Mission Copilot & Mission Parameters (4 cols) */}
-            <div className="lg:col-span-4 flex flex-col gap-5">
+            {/* Right Zone: AI Mission Copilot & Mission Parameters (5 cols on desktop) */}
+            <div className="lg:col-span-5 flex flex-col gap-4">
+              {/* Grounded Conversational AI Mission Copilot */}
               <AiMissionCopilot
-                annotation={annotation}
-                annotationStatus={annotationStatus}
-                annotationError={annotationError}
-                onApplyQuery={setFilters}
+                planets={planets}
+                filters={filters}
+                selectedPlanet={selectedPlanet}
+                onSelectPlanet={handleSelectPlanet}
                 disabled={isLoading}
               />
 
+              {/* Tactical Natural-Language Filter Query */}
+              <NlQueryBar
+                onApply={setFilters}
+                disabled={isLoading}
+              />
+
+              {/* Mission Parameters */}
               <FilterControls
                 values={filters}
                 onChange={setFilters}

@@ -52,6 +52,10 @@ function buildPlanetContext(planet: Exoplanet): string {
   return lines.join("\n");
 }
 
+// ─── In-memory LRU-style cache ───────────────────────────────────────────────
+
+const profileCache = new Map<string, { profile: string; score: ReturnType<typeof scorePlanet> }>();
+
 // ─── Route ────────────────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
@@ -71,13 +75,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
+  const cached = profileCache.get(planet.pl_name);
+  if (cached) {
+    return NextResponse.json(cached);
+  }
+
   const score   = scorePlanet(planet);
   const context = buildPlanetContext(planet);
   const prompt  = `Here is the planet data:\n\n${context}\n\nWrite a 4–6 sentence plain-language profile of this planet.`;
 
   try {
     const text = await generate(SYSTEM, prompt);
-    return NextResponse.json({ profile: text.trim(), score });
+    const result = { profile: text.trim(), score };
+    profileCache.set(planet.pl_name, result);
+    return NextResponse.json(result);
   } catch (err) {
     if (err instanceof GeminiConfigError) {
       return NextResponse.json({ profile: null, score, error: err.message }, { status: 200 });

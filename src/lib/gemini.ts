@@ -45,9 +45,15 @@ export class GeminiAPIError extends Error {
   }
 }
 
-// ─── Model config ─────────────────────────────────────────────────────────────
+// ─── Model config with automatic fallback pipeline ───────────────────────────
 
-const MODEL_NAME = process.env.GEMINI_MODEL || "gemini-3.6-flash"; // updated active flash model
+const CANDIDATE_MODELS = [
+  process.env.GEMINI_MODEL,
+  "gemini-3.5-flash-lite",
+  "gemini-3.1-flash-lite",
+  "gemini-flash-lite-latest",
+  "gemini-3.6-flash",
+].filter(Boolean) as string[];
 
 const SAFETY = [
   { category: HarmCategory.HARM_CATEGORY_HARASSMENT,        threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
@@ -56,41 +62,108 @@ const SAFETY = [
   { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH },
 ];
 
-// ─── Core generate helper ─────────────────────────────────────────────────────
+// ─── Chat Message Interface ───────────────────────────────────────────────────
+
+export interface ChatMessage {
+  role: "user" | "model";
+  text: string;
+}
+
+// ─── Clean Error Formatter ───────────────────────────────────────────────────
+
+function formatApiError(err: unknown): string {
+  const msg = err instanceof Error ? err.message : String(err);
+  if (msg.includes("429") || msg.includes("Quota") || msg.includes("RESOURCE_EXHAUSTED")) {
+    return "AI Copilot is currently rate-limited by Gemini API free tier quota. Please wait a few seconds before trying again.";
+  }
+  if (msg.includes("503") || msg.includes("high demand") || msg.includes("UNAVAILABLE")) {
+    return "Gemini AI service is temporarily experiencing high traffic. Please try again shortly.";
+  }
+  return `Gemini AI service error: ${msg.split("\n")[0]}`;
+}
+
+// ─── Core generate helper with Multi-Model Fallback ───────────────────────────
 
 /**
  * Send a single prompt to Gemini and return the text response.
- * Throws GeminiConfigError if key is missing, GeminiAPIError on request failure.
+ * Automatically tries fallback models if quota or availability errors occur.
  */
 export async function generate(
   systemInstruction: string,
   userPrompt: string
 ): Promise<string> {
-  const client = getClient(); // throws GeminiConfigError if key missing
+  const client = getClient();
+  let lastError: unknown = null;
 
-  const model = client.getGenerativeModel({
-    model: MODEL_NAME,
-    systemInstruction,
-    safetySettings: SAFETY,
-    generationConfig: {
-      temperature: 0.3,      // low — we want factual, grounded output
-      maxOutputTokens: 1024,
-    },
-  });
+  for (const modelName of CANDIDATE_MODELS) {
+    try {
+      const model = client.getGenerativeModel({
+        model: modelName,
+        systemInstruction,
+        safetySettings: SAFETY,
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 1024,
+        },
+      });
 
-  let result;
-  try {
-    result = await model.generateContent(userPrompt);
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    throw new GeminiAPIError(`Gemini request failed: ${msg}`);
+      const result = await model.generateContent(userPrompt);
+      const text = result.response.text();
+      if (text) {
+        return text;
+      }
+    } catch (err) {
+      lastError = err;
+      console.warn(`[gemini] Model ${modelName} encountered error, trying next candidate fallback:`, err instanceof Error ? err.message : err);
+    }
   }
 
-  const text = result.response.text();
-  if (!text) {
-    throw new GeminiAPIError("Gemini returned an empty response.");
+  throw new GeminiAPIError(formatApiError(lastError));
+}
+
+/**
+ * Multi-turn chat generation with conversation history and structured system instructions.
+ * Automatically cascades through candidate models if rate limits occur.
+ */
+export async function generateChat(
+  systemInstruction: string,
+  history: ChatMessage[],
+  newMessage: string
+): Promise<string> {
+  const client = getClient();
+  let lastError: unknown = null;
+
+  for (const modelName of CANDIDATE_MODELS) {
+    try {
+      const model = client.getGenerativeModel({
+        model: modelName,
+        systemInstruction,
+        safetySettings: SAFETY,
+        generationConfig: {
+          temperature: 0.3,
+          maxOutputTokens: 1024,
+        },
+      });
+
+      const chat = model.startChat({
+        history: history.map((h) => ({
+          role: h.role,
+          parts: [{ text: h.text }],
+        })),
+      });
+
+      const result = await chat.sendMessage(newMessage);
+      const text = result.response.text();
+      if (text) {
+        return text;
+      }
+    } catch (err) {
+      lastError = err;
+      console.warn(`[gemini chat] Model ${modelName} encountered error, trying next fallback:`, err instanceof Error ? err.message : err);
+    }
   }
-  return text;
+
+  throw new GeminiAPIError(formatApiError(lastError));
 }
 
 // ─── Convenience: check whether AI is configured ─────────────────────────────

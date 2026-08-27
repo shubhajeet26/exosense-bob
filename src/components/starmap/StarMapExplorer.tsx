@@ -12,7 +12,7 @@ import {
   METHOD_PALETTE,
 } from "@/lib/coordinates";
 import HudPanel from "../dashboard/HudPanel";
-import { Spinner } from "../dashboard/States";
+import AiMissionCopilot from "../dashboard/AiMissionCopilot";
 
 const StarMapCanvas = dynamic(() => import("./StarMapCanvas"), {
   ssr: false,
@@ -31,9 +31,6 @@ interface StarMapExplorerProps {
   selectedPlanet: Exoplanet | null;
   onSelectPlanet: (planet: Exoplanet | null) => void;
   onOpenObservatory?: (planet: Exoplanet) => void;
-  profile?: string | null;
-  profileStatus?: "idle" | "loading" | "success" | "error";
-  profileError?: string | null;
 }
 
 export default function StarMapExplorer({
@@ -43,24 +40,21 @@ export default function StarMapExplorer({
   selectedPlanet,
   onSelectPlanet,
   onOpenObservatory,
-  profile,
-  profileStatus,
-  profileError,
 }: StarMapExplorerProps) {
-  // Visual Color Mode: "temp" | "method" | "radius"
   const [colorMode, setColorMode] = useState<"temp" | "method" | "radius">("temp");
   const [hoveredPlanet, setHoveredPlanet] = useState<Exoplanet | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
+  const [showCopilotDock, setShowCopilotDock] = useState(false);
   const [focusTarget, setFocusTarget] = useState<[number, number, number] | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
-  // 1. Calculate 3D positions for all currently filtered planets
+  // 1. Calculate 3D positions
   const nodes: Planet3DPosition[] = useMemo(() => {
     return calculatePlanet3DPositions(planets, colorMode);
   }, [planets, colorMode]);
 
-  // 2. Lookup map for fast position resolution
+  // 2. Lookup map
   const nodeMap = useMemo(() => {
     const map = new Map<string, Planet3DPosition>();
     for (const node of nodes) {
@@ -82,7 +76,7 @@ export default function StarMapExplorer({
       .slice(0, 8);
   }, [planets, searchQuery]);
 
-  // Handle selecting a planet from search or map
+  // Handle selecting a planet
   const handleSelect = useCallback(
     (planet: Exoplanet) => {
       onSelectPlanet(planet);
@@ -108,12 +102,10 @@ export default function StarMapExplorer({
     }
   }, []);
 
-  // Compute selected planet score
   const selectedScore: PlanetScore | null = useMemo(() => {
     return selectedPlanet ? scorePlanet(selectedPlanet) : null;
   }, [selectedPlanet]);
 
-  // Active discovery methods in view with counts
   const methodStats = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const p of planets) {
@@ -128,7 +120,7 @@ export default function StarMapExplorer({
       ref={mapContainerRef}
       className="relative w-full h-[calc(100vh-80px)] min-h-[640px] flex flex-col bg-[#01030b] overflow-hidden border border-[var(--border)] rounded-lg select-none"
     >
-      {/* ── 3D Star Map WebGL Canvas (Full Background) ── */}
+      {/* ── 3D Star Map WebGL Canvas ── */}
       <div className="absolute inset-0 z-0">
         <StarMapCanvas
           nodes={nodes}
@@ -155,7 +147,7 @@ export default function StarMapExplorer({
           </div>
         </div>
 
-        {/* Center: Search & Quick Target Focus */}
+        {/* Center: Search & Target Focus */}
         <div className="relative w-full sm:w-72">
           <div className="relative">
             <input
@@ -175,7 +167,7 @@ export default function StarMapExplorer({
             )}
           </div>
 
-          {/* Autocomplete Results Dropdown */}
+          {/* Autocomplete Suggestions */}
           <AnimatePresence>
             {searchResults.length > 0 && (
               <motion.div
@@ -191,7 +183,7 @@ export default function StarMapExplorer({
                       handleSelect(planet);
                       setSearchQuery("");
                     }}
-                    className="w-full px-3 py-2 text-left hover:bg-[var(--accent-cyan)]/15 border-b border-[var(--border)]/40 last:border-0 flex items-center justify-between transition-colors"
+                    className="w-full px-3 py-2 text-left hover:bg-[var(--accent-cyan)]/15 border-b border-[var(--border)]/40 last:border-0 flex items-center justify-between transition-colors cursor-pointer"
                   >
                     <div>
                       <span className="font-bold text-[var(--accent-cyan-bright)] block">
@@ -211,7 +203,7 @@ export default function StarMapExplorer({
           </AnimatePresence>
         </div>
 
-        {/* Right: Color Mode & Filter Toggle */}
+        {/* Right: Controls, Color Mode & Copilot Dock Toggle */}
         <div className="flex items-center gap-2">
           {/* Color Mode Switcher */}
           <div className="hidden md:flex items-center gap-1 p-0.5 rounded bg-[#050a20] border border-[var(--border)] font-mono text-[0.6rem]">
@@ -248,10 +240,23 @@ export default function StarMapExplorer({
             </button>
           </div>
 
+          {/* AI Copilot Toggle */}
+          <button
+            onClick={() => setShowCopilotDock(!showCopilotDock)}
+            className={`font-mono text-xs px-2.5 py-1 rounded border transition-colors flex items-center gap-1.5 cursor-pointer ${
+              showCopilotDock
+                ? "bg-[var(--accent-violet)]/25 border-[var(--accent-violet)] text-[var(--accent-violet-bright)] font-bold shadow-[0_0_12px_rgba(139,92,246,0.3)]"
+                : "bg-[#05091c] border-[var(--border)] text-[var(--muted-light)] hover:text-white"
+            }`}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-violet-bright)] animate-pulse" />
+            <span>AI COPILOT</span>
+          </button>
+
           {/* Filter Drawer Toggle */}
           <button
             onClick={() => setShowFilterDrawer(!showFilterDrawer)}
-            className={`font-mono text-xs px-2.5 py-1 rounded border transition-colors flex items-center gap-1.5 ${
+            className={`font-mono text-xs px-2.5 py-1 rounded border transition-colors flex items-center gap-1.5 cursor-pointer ${
               showFilterDrawer
                 ? "bg-[var(--accent-cyan)]/20 border-[var(--accent-cyan)] text-[var(--accent-cyan-bright)]"
                 : "bg-[#05091c] border-[var(--border)] text-[var(--muted-light)] hover:text-white"
@@ -263,7 +268,7 @@ export default function StarMapExplorer({
         </div>
       </div>
 
-      {/* ── Collapsible HUD Filter Drawer ── */}
+      {/* ── Collapsible Filter Drawer ── */}
       <AnimatePresence>
         {showFilterDrawer && (
           <motion.div
@@ -273,7 +278,6 @@ export default function StarMapExplorer({
             className="relative z-20 bg-[#04081c]/95 border-b border-[var(--border)] px-4 py-3 font-mono text-xs"
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
-              {/* Year Filter */}
               <div>
                 <label className="text-[0.6rem] text-[var(--muted-light)] uppercase block mb-1">
                   Discovery Window (1990 – 2026)
@@ -303,7 +307,6 @@ export default function StarMapExplorer({
                 </div>
               </div>
 
-              {/* Radius Filter */}
               <div>
                 <label className="text-[0.6rem] text-[var(--muted-light)] uppercase block mb-1">
                   Radius Range (R⊕)
@@ -333,7 +336,6 @@ export default function StarMapExplorer({
                 </div>
               </div>
 
-              {/* Distance Filter */}
               <div>
                 <label className="text-[0.6rem] text-[var(--muted-light)] uppercase block mb-1">
                   Distance Range (pc)
@@ -363,11 +365,10 @@ export default function StarMapExplorer({
                 </div>
               </div>
 
-              {/* Reset Action */}
               <div className="flex justify-end items-center gap-2 pt-2">
                 <button
                   onClick={() => onFilterChange({ ...DEFAULT_FILTERS })}
-                  className="px-3 py-1 rounded bg-[#070e28] border border-[var(--border)] hover:border-[var(--accent-cyan)] text-[var(--muted-light)] hover:text-white transition-colors"
+                  className="px-3 py-1 rounded bg-[#070e28] border border-[var(--border)] hover:border-[var(--accent-cyan)] text-[var(--muted-light)] hover:text-white transition-colors cursor-pointer"
                 >
                   RESET PARAMETERS
                 </button>
@@ -377,7 +378,7 @@ export default function StarMapExplorer({
         )}
       </AnimatePresence>
 
-      {/* ── Main Star Map Viewport Interactivity Deck ── */}
+      {/* ── Main Viewport Overlay Interactivity Deck ── */}
       <div className="relative flex-1 pointer-events-none">
         {/* Top-Left: Discovery Method Legend Bar */}
         <div className="absolute top-3 left-3 z-10 pointer-events-auto max-w-md hidden sm:block">
@@ -397,7 +398,7 @@ export default function StarMapExplorer({
                         discoveryMethod: isCurrent ? "" : method,
                       })
                     }
-                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[0.58rem] border transition-colors ${
+                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[0.58rem] border transition-colors cursor-pointer ${
                       isCurrent
                         ? "bg-[var(--accent-cyan)]/25 border-[var(--accent-cyan)] text-white font-bold"
                         : "bg-[#060b22] border-[var(--border)] text-[var(--muted-light)] hover:text-white"
@@ -420,14 +421,14 @@ export default function StarMapExplorer({
         <div className="absolute bottom-3 left-3 z-10 pointer-events-auto flex items-center gap-1.5 p-1 rounded bg-[#030718]/85 backdrop-blur-md border border-[var(--border)] font-mono text-xs">
           <button
             onClick={handleRecenterSol}
-            className="px-2 py-1 rounded bg-[#060b22] border border-[var(--border)] text-[var(--muted-light)] hover:text-[var(--accent-cyan-bright)] transition-colors text-[0.62rem]"
+            className="px-2 py-1 rounded bg-[#060b22] border border-[var(--border)] text-[var(--muted-light)] hover:text-[var(--accent-cyan-bright)] transition-colors text-[0.62rem] cursor-pointer"
             title="Recenter Camera to Sol Origin"
           >
             ☉ SOL RECENTER
           </button>
           <button
             onClick={handleToggleFullscreen}
-            className="px-2 py-1 rounded bg-[#060b22] border border-[var(--border)] text-[var(--muted-light)] hover:text-white transition-colors text-[0.62rem]"
+            className="px-2 py-1 rounded bg-[#060b22] border border-[var(--border)] text-[var(--muted-light)] hover:text-white transition-colors text-[0.62rem] cursor-pointer"
             title="Toggle Fullscreen"
           >
             ⛶ FULLSCREEN
@@ -441,9 +442,29 @@ export default function StarMapExplorer({
           </div>
         </div>
 
-        {/* Right Dock: Selected Planet "WORLD INTELLIGENCE" HUD Panel */}
+        {/* Right Dock: Floating AI Mission Copilot (if opened) */}
         <AnimatePresence>
-          {selectedPlanet && (
+          {showCopilotDock && (
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 30 }}
+              transition={{ duration: 0.3 }}
+              className="absolute top-3 right-3 bottom-3 z-30 w-80 lg:w-[420px] pointer-events-auto flex flex-col shadow-2xl"
+            >
+              <AiMissionCopilot
+                planets={planets}
+                filters={filters}
+                selectedPlanet={selectedPlanet}
+                onSelectPlanet={onSelectPlanet}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Right Dock: Selected Planet "WORLD INTELLIGENCE" HUD Panel (when Copilot is not occupying the dock) */}
+        <AnimatePresence>
+          {selectedPlanet && !showCopilotDock && (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -458,7 +479,7 @@ export default function StarMapExplorer({
                 headerRight={
                   <button
                     onClick={() => onSelectPlanet(null)}
-                    className="font-mono text-xs text-[var(--muted)] hover:text-white px-1.5 py-0.5"
+                    className="font-mono text-xs text-[var(--muted)] hover:text-white px-1.5 py-0.5 cursor-pointer"
                   >
                     ✕
                   </button>
@@ -526,19 +547,15 @@ export default function StarMapExplorer({
                     </div>
                   )}
 
-                  {/* AI Profile Section */}
-                  {profile && (
-                    <div className="p-2.5 rounded bg-[#04081c] border border-[var(--border)] space-y-1">
-                      <span className="text-[0.6rem] text-[var(--accent-violet-bright)] uppercase font-bold block">
-                        Gemini AI Briefing
-                      </span>
-                      <p className="text-[0.68rem] text-slate-200 leading-relaxed font-sans">
-                        {profile}
-                      </p>
-                    </div>
-                  )}
+                  {/* Action 1: Ask Copilot About Target */}
+                  <button
+                    onClick={() => setShowCopilotDock(true)}
+                    className="w-full py-2 rounded bg-[var(--accent-violet)]/20 hover:bg-[var(--accent-violet)]/30 border border-[var(--accent-violet)]/50 text-[var(--accent-violet-bright)] text-xs font-bold tracking-wider uppercase transition-all shadow-[0_0_12px_rgba(139,92,246,0.2)] cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <span>🤖 Ask Copilot About {selectedPlanet.pl_name}</span>
+                  </button>
 
-                  {/* Primary Action Button: Open in 3D Observatory */}
+                  {/* Action 2: Open in 3D Observatory */}
                   {onOpenObservatory && (
                     <button
                       onClick={() => onOpenObservatory(selectedPlanet)}

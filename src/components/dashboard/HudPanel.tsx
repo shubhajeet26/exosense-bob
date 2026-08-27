@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React from "react";
 
@@ -134,7 +134,15 @@ export default function HudPanel({
       )}
 
       {/* Panel Body */}
-      <div className={noPadding ? "" : "p-4"}>{children}</div>
+      <div
+        className={`hud-panel-body ${noPadding ? "" : "p-4"} ${
+          className.includes("flex") || className.includes("h-full")
+            ? "flex-1 min-h-0 flex flex-col"
+            : ""
+        }`}
+      >
+        {children}
+      </div>
     </div>
   );
 }
