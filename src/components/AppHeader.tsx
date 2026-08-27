@@ -17,12 +17,20 @@ interface AppHeaderProps {
   activeTab?: NavTab;
   onTabChange?: (tab: NavTab) => void;
   favoritesCount?: number;
+  onOpenCommandPalette?: () => void;
+  onStartGuidedTour?: () => void;
+  onStartDemo?: () => void;
+  isDemoActive?: boolean;
 }
 
 export default function AppHeader({
   activeTab = "dashboard",
   onTabChange,
   favoritesCount = 0,
+  onOpenCommandPalette,
+  onStartGuidedTour,
+  onStartDemo,
+  isDemoActive = false,
 }: AppHeaderProps) {
   const [timeString, setTimeString] = useState("");
 
@@ -91,7 +99,7 @@ export default function AppHeader({
               EXOSENSE
             </span>
             <span className="text-[0.55rem] px-1.5 py-0.5 rounded bg-[var(--accent-blue)]/15 border border-[var(--accent-blue)]/30 text-[var(--accent-cyan-bright)] tracking-widest font-semibold uppercase">
-              SYS.V11
+              SYS.V12
             </span>
           </div>
         </div>
@@ -203,8 +211,33 @@ export default function AppHeader({
         </nav>
       )}
 
-      {/* Right: Mission Telemetry Status Indicators */}
+      {/* Right: Actions, Command Palette & Telemetry Status */}
       <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        {onOpenCommandPalette && (
+          <button
+            onClick={onOpenCommandPalette}
+            className="flex items-center gap-1 px-2 py-1 rounded bg-[#060c28] hover:bg-[#0e1948] border border-[var(--border)] text-[0.62rem] text-[var(--muted-light)] hover:text-white transition-colors cursor-pointer"
+            title="Open Command Center (Ctrl+K)"
+          >
+            <span className="text-[var(--accent-cyan-bright)]">⌘</span>
+            <span>CMD</span>
+            <kbd className="text-[0.5rem] bg-[#020512] px-1 py-0.2 rounded border border-[var(--border)]">K</kbd>
+          </button>
+        )}
+
+        {onStartDemo && (
+          <button
+            onClick={onStartDemo}
+            className={`px-2.5 py-1 rounded border text-[0.62rem] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+              isDemoActive
+                ? "bg-[var(--accent-cyan)]/25 border-[var(--accent-cyan)] text-[var(--accent-cyan-bright)]"
+                : "bg-[#070e28] hover:bg-[#0c1640] border-[var(--border)] text-[var(--muted-light)] hover:text-white"
+            }`}
+          >
+            ⚡ DEMO
+          </button>
+        )}
+
         <div className="hidden xl:flex items-center gap-1.5 px-2 py-1 rounded bg-[#070d22] border border-[var(--border)] text-[0.65rem] text-[var(--muted-light)]">
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-cyan)] animate-pulse" />
           <span className="tabular-nums tracking-wider text-slate-300">{timeString || "UTC SYNCING..."}</span>
@@ -214,12 +247,6 @@ export default function AppHeader({
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping opacity-75" />
           <span className="text-[var(--muted)]">DATA:</span>
           <span className="text-emerald-400 font-semibold tracking-wider">NASA ARCHIVE</span>
-        </div>
-
-        <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded bg-[#070d22] border border-[var(--border)] text-[0.62rem]">
-          <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-violet-bright)] shadow-[0_0_8px_#a78bfa]" />
-          <span className="text-[var(--muted)]">AI:</span>
-          <span className="text-[var(--accent-violet-bright)] font-semibold tracking-wider">COPILOT READY</span>
         </div>
       </div>
     </motion.header>

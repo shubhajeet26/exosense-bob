@@ -17,6 +17,8 @@ const IntroSequence = dynamic(() => import("@/components/IntroSequence"), {
 export default function Home() {
   const [introComplete, setIntroComplete] = useState(false);
   const [activeTab, setActiveTab] = useState<NavTab>("dashboard");
+  const [isDemoActive, setIsDemoActive] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const { count: favoritesCount } = useFavorites();
 
   return (
@@ -36,9 +38,19 @@ export default function Home() {
             activeTab={activeTab}
             onTabChange={setActiveTab}
             favoritesCount={favoritesCount}
+            onOpenCommandPalette={() => setIsCommandPaletteOpen(true)}
+            onStartDemo={() => setIsDemoActive((prev) => !prev)}
+            isDemoActive={isDemoActive}
           />
           <main className="flex-1">
-            <Dashboard activeTab={activeTab} onTabChange={setActiveTab} />
+            <Dashboard
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              isDemoActive={isDemoActive}
+              onToggleDemo={() => setIsDemoActive(false)}
+              isCommandPaletteOpen={isCommandPaletteOpen}
+              onCloseCommandPalette={() => setIsCommandPaletteOpen(false)}
+            />
           </main>
         </div>
       )}

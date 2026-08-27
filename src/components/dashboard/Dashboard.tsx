@@ -23,6 +23,9 @@ import DiscoveryCenter from "../discovery/DiscoveryCenter";
 import DiscoveryTimeline from "../discovery/DiscoveryTimeline";
 import MyMission from "../favorites/MyMission";
 import MissionIntelligence from "../intelligence/MissionIntelligence";
+import GuidedMission from "../showcase/GuidedMission";
+import DemoMission from "../showcase/DemoMission";
+import CommandPalette from "../showcase/CommandPalette";
 import { NavTab } from "../AppHeader";
 import { useFavorites } from "@/lib/useFavorites";
 
@@ -48,6 +51,10 @@ type FetchStatus = "idle" | "loading" | "success" | "error";
 interface DashboardProps {
   activeTab?: NavTab;
   onTabChange?: (tab: NavTab) => void;
+  isDemoActive?: boolean;
+  onToggleDemo?: () => void;
+  isCommandPaletteOpen?: boolean;
+  onCloseCommandPalette?: () => void;
 }
 
 function buildQueryString(filters: FilterValues): string {
@@ -66,6 +73,10 @@ function buildQueryString(filters: FilterValues): string {
 export default function Dashboard({
   activeTab = "dashboard",
   onTabChange,
+  isDemoActive = false,
+  onToggleDemo,
+  isCommandPaletteOpen = false,
+  onCloseCommandPalette,
 }: DashboardProps) {
   const [filters, setFilters] = useState<FilterValues>(DEFAULT_FILTERS);
   const [planets, setPlanets] = useState<Exoplanet[]>([]);
@@ -74,6 +85,9 @@ export default function Dashboard({
   const [selectedPlanet, setSelectedPlanet] = useState<Exoplanet | null>(null);
   const [compareWorldA, setCompareWorldA] = useState<Exoplanet | null>(null);
   const [compareWorldB, setCompareWorldB] = useState<Exoplanet | null>(null);
+
+  // Guided Tour State
+  const [isTourOpen, setIsTourOpen] = useState(false);
 
   const { favoriteNames, toggleFavorite, clearFavorites, count: favoritesCount } = useFavorites();
   const dataDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -117,7 +131,7 @@ export default function Dashboard({
     }
   }, [planets, selectedPlanet]);
 
-  // ── Planet Selection & AI Profile ──
+  // ── Planet Selection & Actions ──
   const handleSelectPlanet = useCallback((planet: Exoplanet | null) => {
     setSelectedPlanet((prev) => (prev?.pl_name === planet?.pl_name ? null : planet));
   }, []);
@@ -216,6 +230,39 @@ export default function Dashboard({
 
   return (
     <div className="hud-grid-bg min-h-screen flex flex-col gap-5 w-full max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4">
+      {/* ── Guided Mission Tour Modal ── */}
+      <GuidedMission
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+        onNavigateTab={(t) => onTabChange?.(t)}
+      />
+
+      {/* ── Command Palette Modal ── */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => onCloseCommandPalette?.()}
+        allPlanets={planets}
+        onNavigateTab={(t) => onTabChange?.(t)}
+        onSelectPlanet={handleSelectPlanet}
+        onOpenObservatory={handleOpenObservatory}
+        onOpenCompare={handleOpenCompare}
+        onOpenStarMapWithTarget={handleOpenStarMapWithTarget}
+        onToggleFavorite={toggleFavorite}
+      />
+
+      {/* ── Demo Mission Presenter Toolbar ── */}
+      <DemoMission
+        isActive={isDemoActive}
+        onExitDemo={() => onToggleDemo?.()}
+        allPlanets={planets}
+        onNavigateTab={(t) => onTabChange?.(t)}
+        onSelectPlanet={(p) => setSelectedPlanet(p)}
+        onSetComparison={(pA, pB) => {
+          setCompareWorldA(pA);
+          setCompareWorldB(pB);
+        }}
+      />
+
       {/* ── View 1: Star Map Explorer ── */}
       {activeTab === "starmap" && (
         <motion.div
@@ -384,6 +431,46 @@ export default function Dashboard({
           transition={{ duration: 0.3 }}
           className="space-y-5"
         >
+          {/* Mission Showcase Briefing Card */}
+          <div className="p-4 rounded-lg bg-[#03071c]/90 border border-[var(--border)] backdrop-blur-md flex flex-wrap items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[0.6rem] font-bold px-2 py-0.5 rounded bg-[var(--accent-cyan)]/20 border border-[var(--accent-cyan)]/40 text-[var(--accent-cyan-bright)] uppercase">
+                  ACTIVE MISSION BRIEFING
+                </span>
+                <span className="text-xs font-bold text-white uppercase">
+                  NASA EXOPLANET EXPLORATION
+                </span>
+              </div>
+              <p className="text-[0.65rem] text-[var(--muted-light)] max-w-xl">
+                Explore real NASA candidate worlds, calculate orbital scores, fly through 3D star coordinates, and evaluate telemetry with AI.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap text-xs">
+              <button
+                onClick={() => setIsTourOpen(true)}
+                className="px-3 py-1.5 rounded bg-[var(--accent-cyan)]/20 hover:bg-[var(--accent-cyan)]/30 border border-[var(--accent-cyan)]/40 text-[var(--accent-cyan-bright)] text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <span>🚀 Guided Mission</span>
+              </button>
+
+              <button
+                onClick={() => onTabChange?.("starmap")}
+                className="px-3 py-1.5 rounded bg-[#070e28] hover:bg-[#0c1640] border border-[var(--border)] text-[var(--muted-light)] hover:text-white text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer"
+              >
+                🌌 3D Star Map
+              </button>
+
+              <button
+                onClick={() => onTabChange?.("intelligence")}
+                className="px-3 py-1.5 rounded bg-[#070e28] hover:bg-[#0c1640] border border-[var(--border)] text-[var(--muted-light)] hover:text-white text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer"
+              >
+                ⚡ Intelligence
+              </button>
+            </div>
+          </div>
+
           {/* Top Telemetry HUD Ribbon */}
           <MissionTelemetryBar
             planets={planets}
