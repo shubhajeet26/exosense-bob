@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,6 +17,9 @@ import AiMissionCopilot from "./AiMissionCopilot";
 import MissionTelemetryBar from "./MissionTelemetryBar";
 import { type ProfileStatus } from "./PlanetViewer";
 import StarMapExplorer from "../starmap/StarMapExplorer";
+import PlanetObservatory from "../observatory/PlanetObservatory";
+import WorldComparison from "../comparison/WorldComparison";
+import { NavTab } from "../AppHeader";
 
 const PlanetScatterChart = dynamic(() => import("./PlanetScatterChart"), {
   ssr: false,
@@ -38,8 +41,8 @@ const PlanetViewer = dynamic(() => import("./PlanetViewer"), {
 type FetchStatus = "idle" | "loading" | "success" | "error";
 
 interface DashboardProps {
-  activeTab?: "dashboard" | "starmap";
-  onTabChange?: (tab: "dashboard" | "starmap") => void;
+  activeTab?: NavTab;
+  onTabChange?: (tab: NavTab) => void;
 }
 
 function buildQueryString(filters: FilterValues): string {
@@ -64,6 +67,9 @@ export default function Dashboard({
   const [status, setStatus] = useState<FetchStatus>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [selectedPlanet, setSelectedPlanet] = useState<Exoplanet | null>(null);
+  const [compareWorldA, setCompareWorldA] = useState<Exoplanet | null>(null);
+  const [compareWorldB, setCompareWorldB] = useState<Exoplanet | null>(null);
+
   const dataDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [profile, setProfile] = useState<string | null>(null);
@@ -116,10 +122,23 @@ export default function Dashboard({
     (planet: Exoplanet) => {
       setSelectedPlanet(planet);
       if (onTabChange) {
-        onTabChange("dashboard");
+        onTabChange("observatory");
       }
     },
     [onTabChange]
+  );
+
+  const handleOpenCompare = useCallback(
+    (planet: Exoplanet) => {
+      setCompareWorldA(planet);
+      // Pick a suitable second planet from list
+      const candidateB = planets.find((p) => p.pl_name !== planet.pl_name) || planets[1] || null;
+      setCompareWorldB(candidateB);
+      if (onTabChange) {
+        onTabChange("compare");
+      }
+    },
+    [planets, onTabChange]
   );
 
   useEffect(() => {
@@ -189,7 +208,52 @@ export default function Dashboard({
         </motion.div>
       )}
 
-      {/* ── View 2: Mission Control Dashboard ── */}
+      {/* ── View 2: Planet Observatory ── */}
+      {activeTab === "observatory" && (
+        <motion.div
+          key="observatory-view"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="w-full"
+        >
+          <PlanetObservatory
+            planet={selectedPlanet}
+            allPlanets={planets}
+            onSelectPlanet={(p) => setSelectedPlanet(p)}
+            onNavigateToStarMap={() => onTabChange?.("starmap")}
+            onNavigateToCompare={handleOpenCompare}
+            onNavigateToMissionControl={() => onTabChange?.("dashboard")}
+            profile={profile}
+            profileStatus={profileStatus}
+            profileError={profileError}
+          />
+        </motion.div>
+      )}
+
+      {/* ── View 3: World Comparison ── */}
+      {activeTab === "compare" && (
+        <motion.div
+          key="compare-view"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="w-full"
+        >
+          <WorldComparison
+            allPlanets={planets}
+            initialPlanetA={compareWorldA || selectedPlanet || planets[0] || null}
+            initialPlanetB={compareWorldB || planets[1] || null}
+            onNavigateToObservatory={handleOpenObservatory}
+            onNavigateToStarMap={() => onTabChange?.("starmap")}
+            onNavigateToMissionControl={() => onTabChange?.("dashboard")}
+          />
+        </motion.div>
+      )}
+
+      {/* ── View 4: Mission Control Dashboard ── */}
       {activeTab === "dashboard" && (
         <motion.div
           key="dashboard-view"
@@ -228,6 +292,8 @@ export default function Dashboard({
                       profileStatus={profileStatus}
                       profileError={profileError}
                       score={planetScore}
+                      onOpenObservatory={handleOpenObservatory}
+                      onOpenCompare={handleOpenCompare}
                     />
                   </motion.div>
                 )}

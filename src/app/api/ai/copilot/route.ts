@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {
   generateChat,
   ChatMessage,
@@ -26,12 +26,14 @@ interface CopilotRequestBody {
   planets?: Exoplanet[];
   filterSummary?: string;
   selectedPlanet?: Exoplanet | null;
+  comparisonPlanets?: [Exoplanet | null, Exoplanet | null] | null;
 }
 
 function buildGroundedContext(
   planets: Exoplanet[] = [],
   filterSummary: string = "default filters",
-  selectedPlanet: Exoplanet | null = null
+  selectedPlanet: Exoplanet | null = null,
+  comparisonPlanets: [Exoplanet | null, Exoplanet | null] | null = null
 ): string {
   const lines: string[] = [];
 
@@ -77,6 +79,16 @@ function buildGroundedContext(
     }
   }
 
+  // Active Comparison Context (if in comparison mode)
+  if (comparisonPlanets && comparisonPlanets[0] && comparisonPlanets[1]) {
+    const [pA, pB] = comparisonPlanets;
+    const scoreA = scorePlanet(pA);
+    const scoreB = scorePlanet(pB);
+    lines.push("\n=== ACTIVE DUAL WORLD COMPARISON MODE ===");
+    lines.push(`WORLD A: ${pA.pl_name} (Host: ${pA.hostname}, Radius: ${pA.pl_rade?.toFixed(2) ?? "N/A"} R⊕, Temp: ${pA.pl_eqt?.toFixed(0) ?? "N/A"} K, Dist: ${pA.sy_dist?.toFixed(1) ?? "N/A"} pc, Method: ${pA.discoverymethod ?? "N/A"}, Score: ${scoreA.score}/100)`);
+    lines.push(`WORLD B: ${pB.pl_name} (Host: ${pB.hostname}, Radius: ${pB.pl_rade?.toFixed(2) ?? "N/A"} R⊕, Temp: ${pB.pl_eqt?.toFixed(0) ?? "N/A"} K, Dist: ${pB.sy_dist?.toFixed(1) ?? "N/A"} pc, Method: ${pB.discoverymethod ?? "N/A"}, Score: ${scoreB.score}/100)`);
+  }
+
   if (selectedPlanet) {
     const pScore = scorePlanet(selectedPlanet);
     lines.push("\n=== CURRENTLY SELECTED TARGET IN FOCUS ===");
@@ -93,7 +105,7 @@ function buildGroundedContext(
     if (selectedPlanet.sy_dist != null) lines.push(`DISTANCE FROM EARTH: ${selectedPlanet.sy_dist.toFixed(1)} parsecs`);
     lines.push(`EXOSENSE INTEREST SCORE: ${pScore.score}/100 [Computed exploratory metric]`);
     lines.push(`SCORE BREAKDOWN: ${pScore.explanation}`);
-  } else {
+  } else if (!comparisonPlanets) {
     lines.push("\nCURRENTLY SELECTED TARGET: None selected.");
   }
 
@@ -118,7 +130,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request payload." }, { status: 400 });
   }
 
-  const { message = "", history = [], planets = [], filterSummary = "default filters", selectedPlanet = null } = body;
+  const {
+    message = "",
+    history = [],
+    planets = [],
+    filterSummary = "default filters",
+    selectedPlanet = null,
+    comparisonPlanets = null,
+  } = body;
 
   const userQuery = message.trim();
   if (!userQuery) {
@@ -126,7 +145,12 @@ export async function POST(req: NextRequest) {
   }
 
   // Build the grounded context string
-  const structuredContext = buildGroundedContext(planets, filterSummary, selectedPlanet);
+  const structuredContext = buildGroundedContext(
+    planets,
+    filterSummary,
+    selectedPlanet,
+    comparisonPlanets
+  );
 
   // Combine system instruction with live mission context
   const fullSystemInstruction = `${COPILOT_SYSTEM_INSTRUCTION}\n\n${structuredContext}`;

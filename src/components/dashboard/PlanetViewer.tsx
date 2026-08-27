@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useRef, memo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -135,9 +135,20 @@ interface Props {
   profileStatus: ProfileStatus;
   profileError: string | null;
   score: PlanetScore | null;
+  onOpenObservatory?: (planet: Exoplanet) => void;
+  onOpenCompare?: (planet: Exoplanet) => void;
 }
 
-function PlanetViewerInner({ planet, onClose, profile, profileStatus, profileError, score }: Props) {
+function PlanetViewerInner({
+  planet,
+  onClose,
+  profile,
+  profileStatus,
+  profileError,
+  score,
+  onOpenObservatory,
+  onOpenCompare,
+}: Props) {
   if (!planet) return null;
 
   const color = tempToColor(planet.pl_eqt ?? null);
@@ -149,13 +160,33 @@ function PlanetViewerInner({ planet, onClose, profile, profileStatus, profileErr
       moduleCode="OBS-01"
       badge={{ text: "TARGET LOCKED", variant: "violet" }}
       headerRight={
-        <button
-          onClick={onClose}
-          aria-label="Close planet viewer"
-          className="font-mono text-xs text-[var(--muted)] hover:text-white px-2 py-0.5 rounded border border-[var(--border)] hover:border-red-400 transition-colors cursor-pointer"
-        >
-          [ ✕ CLOSE ]
-        </button>
+        <div className="flex items-center gap-1.5 font-mono text-xs">
+          {onOpenObservatory && (
+            <button
+              onClick={() => onOpenObservatory(planet)}
+              className="px-2 py-0.5 rounded bg-[var(--accent-cyan)]/20 hover:bg-[var(--accent-cyan)]/30 border border-[var(--accent-cyan)]/40 text-[var(--accent-cyan-bright)] text-[0.62rem] font-bold uppercase transition-all cursor-pointer"
+            >
+              🔭 Full Observatory
+            </button>
+          )}
+
+          {onOpenCompare && (
+            <button
+              onClick={() => onOpenCompare(planet)}
+              className="px-2 py-0.5 rounded bg-[var(--accent-violet)]/20 hover:bg-[var(--accent-violet)]/30 border border-[var(--accent-violet)]/40 text-[var(--accent-violet-bright)] text-[0.62rem] font-bold uppercase transition-all cursor-pointer"
+            >
+              ⚖️ Compare
+            </button>
+          )}
+
+          <button
+            onClick={onClose}
+            aria-label="Close planet viewer"
+            className="text-[var(--muted)] hover:text-white px-2 py-0.5 rounded border border-[var(--border)] hover:border-red-400 transition-colors cursor-pointer text-[0.62rem]"
+          >
+            ✕ CLOSE
+          </button>
+        </div>
       }
       cornerAccent="cyan"
     >

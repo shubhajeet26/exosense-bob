@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import AppHeader from "@/components/AppHeader";
+import AppHeader, { NavTab } from "@/components/AppHeader";
 import Dashboard from "@/components/dashboard/Dashboard";
 
 // Both components rely on browser APIs — skip SSR
@@ -15,7 +15,7 @@ const IntroSequence = dynamic(() => import("@/components/IntroSequence"), {
 
 export default function Home() {
   const [introComplete, setIntroComplete] = useState(false);
-  const [activeTab, setActiveTab] = useState<"dashboard" | "starmap">("dashboard");
+  const [activeTab, setActiveTab] = useState<NavTab>("dashboard");
 
   return (
     <>
