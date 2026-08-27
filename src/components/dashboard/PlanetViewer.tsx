@@ -5,6 +5,8 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
 import { Exoplanet } from "@/lib/nasa";
+import { PlanetScore } from "@/lib/scoring";
+import { Spinner } from "./States";
 
 // ─── Temperature → colour mapping ─────────────────────────────────────────────
 // Cold (<300 K)  : deep navy/violet
@@ -99,14 +101,54 @@ function fmt(v: number | null, decimals: number, unit: string): string {
   return v != null ? `${v.toFixed(decimals)} ${unit}` : "—";
 }
 
+// ─── Score bar ────────────────────────────────────────────────────────────────
+
+function ScoreBar({ score }: { score: PlanetScore }) {
+  const pct = Math.min(100, Math.max(0, score.score));
+  const color =
+    pct >= 60 ? "#34d399" : pct >= 35 ? "#f59e0b" : "#64748b";
+
+  return (
+    <div className="px-4 pt-3 pb-2 border-t border-[var(--border)]">
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-[0.62rem] tracking-widest uppercase text-[var(--muted)]">
+          Exosense Interest Score
+        </span>
+        <span className="text-xs font-bold tabular-nums" style={{ color }}>
+          {score.score}/100
+        </span>
+      </div>
+      <div className="w-full h-1.5 rounded-full bg-[var(--border)] overflow-hidden">
+        <motion.div
+          className="h-full rounded-full"
+          style={{ background: color }}
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+        />
+      </div>
+      <p className="text-[0.6rem] text-[var(--muted)] mt-1.5 leading-snug">
+        Simplified exploratory metric — not a scientific habitability determination.
+      </p>
+    </div>
+  );
+}
+
 // ─── Main exported component ──────────────────────────────────────────────────
+
+export type ProfileStatus = "idle" | "loading" | "success" | "error";
 
 interface Props {
   planet: Exoplanet | null;
   onClose: () => void;
+  // AI profile (fetched by Dashboard, passed in)
+  profile: string | null;
+  profileStatus: ProfileStatus;
+  profileError: string | null;
+  score: PlanetScore | null;
 }
 
-function PlanetViewerInner({ planet, onClose }: Props) {
+function PlanetViewerInner({ planet, onClose, profile, profileStatus, profileError, score }: Props) {
   const color  = tempToColor(planet?.pl_eqt ?? null);
   const radius = visualRadius(planet?.pl_rade ?? null);
 
@@ -173,7 +215,7 @@ function PlanetViewerInner({ planet, onClose }: Props) {
           </div>
 
           {/* Temperature colour legend */}
-          <div className="px-4 pb-3 pt-1 flex items-center gap-2">
+          <div className="px-4 pb-2 pt-1 flex items-center gap-2">
             <div
               className="w-3 h-3 rounded-full shrink-0"
               style={{ background: `#${color.getHexString()}` }}
@@ -182,6 +224,51 @@ function PlanetViewerInner({ planet, onClose }: Props) {
               Colour represents estimated equilibrium temperature
               {planet.pl_eqt != null ? ` (${planet.pl_eqt.toFixed(0)} K)` : " (unknown)"}
             </span>
+          </div>
+
+          {/* Deterministic score bar */}
+          {score && <ScoreBar score={score} />}
+
+          {/* AI Profile section */}
+          <div className="px-4 py-3 border-t border-[var(--border)]">
+            <div className="flex items-center gap-2 mb-2">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 2l2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5L12 2z"
+                  fill="#818cf8" opacity="0.9"/>
+              </svg>
+              <span className="text-[0.62rem] tracking-widest uppercase font-semibold"
+                style={{ color: "#a78bfa" }}>
+                Gemini AI Profile
+              </span>
+              {profileStatus === "loading" && <Spinner size={12} />}
+            </div>
+            <AnimatePresence mode="wait">
+              {profileStatus === "idle" && (
+                <motion.p key="idle" className="text-[0.65rem] text-[var(--muted)]"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  Select a planet to generate an AI profile.
+                </motion.p>
+              )}
+              {profileStatus === "loading" && (
+                <motion.p key="loading" className="text-[0.65rem] text-[var(--muted)] animate-pulse"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  Generating profile with Gemini…
+                </motion.p>
+              )}
+              {profileStatus === "success" && profile && (
+                <motion.p key="profile" className="text-xs text-[var(--foreground)] leading-relaxed"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}>
+                  {profile}
+                </motion.p>
+              )}
+              {(profileStatus === "error") && (
+                <motion.p key="error" className="text-[0.65rem] text-yellow-500"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  ⚠ {profileError ?? "AI profile unavailable."}
+                </motion.p>
+              )}
+            </AnimatePresence>
           </div>
         </motion.div>
       )}

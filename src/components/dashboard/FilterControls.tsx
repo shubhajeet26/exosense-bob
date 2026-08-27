@@ -2,41 +2,13 @@
 
 import { motion } from "framer-motion";
 import { FilterParams } from "@/lib/nasa";
+import { DISCOVERY_METHODS } from "@/lib/constants";
+import { FilterValues, DEFAULT_FILTERS } from "@/lib/filterDefaults";
 
-// Known discovery methods in the archive
-export const DISCOVERY_METHODS = [
-  "Transit",
-  "Radial Velocity",
-  "Imaging",
-  "Microlensing",
-  "Astrometry",
-  "Eclipse Timing Variations",
-  "Transit Timing Variations",
-  "Orbital Brightness Modulation",
-  "Pulsar Timing",
-  "Pulsation Timing Variations",
-  "Disk Kinematics",
-] as const;
-
-export interface FilterValues {
-  yearMin: number;
-  yearMax: number;
-  radiusMin: number;
-  radiusMax: number;
-  discoveryMethod: string;
-  distanceMin: number;
-  distanceMax: number;
-}
-
-export const DEFAULT_FILTERS: FilterValues = {
-  yearMin: 1992,
-  yearMax: new Date().getFullYear(),
-  radiusMin: 0,
-  radiusMax: 30,
-  discoveryMethod: "",
-  distanceMin: 0,
-  distanceMax: 3000,
-};
+// Re-export so existing imports from this file continue to work
+export { DISCOVERY_METHODS } from "@/lib/constants";
+export type { FilterValues } from "@/lib/filterDefaults";
+export { DEFAULT_FILTERS } from "@/lib/filterDefaults";
 
 interface Props {
   values: FilterValues;
