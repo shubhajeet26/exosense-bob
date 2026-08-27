@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -19,7 +19,11 @@ import { type ProfileStatus } from "./PlanetViewer";
 import StarMapExplorer from "../starmap/StarMapExplorer";
 import PlanetObservatory from "../observatory/PlanetObservatory";
 import WorldComparison from "../comparison/WorldComparison";
+import DiscoveryCenter from "../discovery/DiscoveryCenter";
+import DiscoveryTimeline from "../discovery/DiscoveryTimeline";
+import MyMission from "../favorites/MyMission";
 import { NavTab } from "../AppHeader";
+import { useFavorites } from "@/lib/useFavorites";
 
 const PlanetScatterChart = dynamic(() => import("./PlanetScatterChart"), {
   ssr: false,
@@ -70,6 +74,7 @@ export default function Dashboard({
   const [compareWorldA, setCompareWorldA] = useState<Exoplanet | null>(null);
   const [compareWorldB, setCompareWorldB] = useState<Exoplanet | null>(null);
 
+  const { favoriteNames, toggleFavorite, clearFavorites, count: favoritesCount } = useFavorites();
   const dataDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [profile, setProfile] = useState<string | null>(null);
@@ -131,7 +136,6 @@ export default function Dashboard({
   const handleOpenCompare = useCallback(
     (planet: Exoplanet) => {
       setCompareWorldA(planet);
-      // Pick a suitable second planet from list
       const candidateB = planets.find((p) => p.pl_name !== planet.pl_name) || planets[1] || null;
       setCompareWorldB(candidateB);
       if (onTabChange) {
@@ -139,6 +143,30 @@ export default function Dashboard({
       }
     },
     [planets, onTabChange]
+  );
+
+  const handleOpenStarMapWithTarget = useCallback(
+    (planet: Exoplanet) => {
+      setSelectedPlanet(planet);
+      if (onTabChange) {
+        onTabChange("starmap");
+      }
+    },
+    [onTabChange]
+  );
+
+  const handleApplyYearFilter = useCallback(
+    (year: number) => {
+      setFilters((prev) => ({
+        ...prev,
+        yearMin: year,
+        yearMax: year,
+      }));
+      if (onTabChange) {
+        onTabChange("dashboard");
+      }
+    },
+    [onTabChange]
   );
 
   useEffect(() => {
@@ -208,7 +236,51 @@ export default function Dashboard({
         </motion.div>
       )}
 
-      {/* ── View 2: Planet Observatory ── */}
+      {/* ── View 2: Discovery Center ── */}
+      {activeTab === "discovery" && (
+        <motion.div
+          key="discovery-view"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="w-full"
+        >
+          <DiscoveryCenter
+            planets={planets}
+            favoriteNames={favoriteNames}
+            onToggleFavorite={toggleFavorite}
+            onNavigateToObservatory={handleOpenObservatory}
+            onNavigateToCompare={handleOpenCompare}
+            onNavigateToStarMapWithTarget={handleOpenStarMapWithTarget}
+            onNavigateToTimeline={() => onTabChange?.("timeline")}
+            onAskCopilot={(query) => {
+              // Switch to dashboard and submit
+              if (onTabChange) onTabChange("dashboard");
+            }}
+          />
+        </motion.div>
+      )}
+
+      {/* ── View 3: Discovery Timeline ── */}
+      {activeTab === "timeline" && (
+        <motion.div
+          key="timeline-view"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="w-full"
+        >
+          <DiscoveryTimeline
+            planets={planets}
+            onApplyYearFilter={handleApplyYearFilter}
+            onNavigateToObservatory={handleOpenObservatory}
+          />
+        </motion.div>
+      )}
+
+      {/* ── View 4: Planet Observatory ── */}
       {activeTab === "observatory" && (
         <motion.div
           key="observatory-view"
@@ -225,6 +297,8 @@ export default function Dashboard({
             onNavigateToStarMap={() => onTabChange?.("starmap")}
             onNavigateToCompare={handleOpenCompare}
             onNavigateToMissionControl={() => onTabChange?.("dashboard")}
+            isFavorite={selectedPlanet ? favoriteNames.includes(selectedPlanet.pl_name) : false}
+            onToggleFavorite={toggleFavorite}
             profile={profile}
             profileStatus={profileStatus}
             profileError={profileError}
@@ -232,7 +306,7 @@ export default function Dashboard({
         </motion.div>
       )}
 
-      {/* ── View 3: World Comparison ── */}
+      {/* ── View 5: World Comparison ── */}
       {activeTab === "compare" && (
         <motion.div
           key="compare-view"
@@ -253,7 +327,30 @@ export default function Dashboard({
         </motion.div>
       )}
 
-      {/* ── View 4: Mission Control Dashboard ── */}
+      {/* ── View 6: My Mission (Favorites) ── */}
+      {activeTab === "favorites" && (
+        <motion.div
+          key="favorites-view"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="w-full"
+        >
+          <MyMission
+            allPlanets={planets}
+            favoriteNames={favoriteNames}
+            onToggleFavorite={toggleFavorite}
+            onClearFavorites={clearFavorites}
+            onNavigateToObservatory={handleOpenObservatory}
+            onNavigateToCompare={handleOpenCompare}
+            onNavigateToStarMap={() => onTabChange?.("starmap")}
+            onNavigateToDiscovery={() => onTabChange?.("discovery")}
+          />
+        </motion.div>
+      )}
+
+      {/* ── View 7: Mission Control Dashboard ── */}
       {activeTab === "dashboard" && (
         <motion.div
           key="dashboard-view"
@@ -269,6 +366,7 @@ export default function Dashboard({
             selectedPlanet={selectedPlanet}
             totalFiltered={planets.length}
             isLoading={isLoading}
+            favoritesCount={favoritesCount}
           />
 
           {/* Mission Control Main Composition */}

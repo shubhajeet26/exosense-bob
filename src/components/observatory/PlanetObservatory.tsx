@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useRef, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -17,6 +17,8 @@ interface PlanetObservatoryProps {
   onNavigateToStarMap?: () => void;
   onNavigateToCompare?: (planet: Exoplanet) => void;
   onNavigateToMissionControl?: () => void;
+  isFavorite?: boolean;
+  onToggleFavorite?: (planetName: string) => void;
   profile?: string | null;
   profileStatus?: "idle" | "loading" | "success" | "error";
   profileError?: string | null;
@@ -146,6 +148,8 @@ export default function PlanetObservatory({
   onNavigateToStarMap,
   onNavigateToCompare,
   onNavigateToMissionControl,
+  isFavorite = false,
+  onToggleFavorite,
   profile,
   profileStatus = "idle",
   profileError,
@@ -253,6 +257,19 @@ export default function PlanetObservatory({
 
         {/* Right: Quick Action Navigation */}
         <div className="flex items-center gap-2 flex-wrap">
+          {onToggleFavorite && (
+            <button
+              onClick={() => onToggleFavorite(activePlanet.pl_name)}
+              className={`px-3 py-1.5 rounded border text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 ${
+                isFavorite
+                  ? "bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.3)]"
+                  : "bg-[#060c28] border-[var(--border)] text-[var(--muted-light)] hover:text-white"
+              }`}
+            >
+              <span>{isFavorite ? "★ Saved in Mission" : "☆ Save to Mission"}</span>
+            </button>
+          )}
+
           {onNavigateToCompare && (
             <button
               onClick={() => onNavigateToCompare(activePlanet)}

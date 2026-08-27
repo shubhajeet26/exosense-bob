@@ -3,16 +3,25 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
-export type NavTab = "dashboard" | "starmap" | "observatory" | "compare";
+export type NavTab =
+  | "dashboard"
+  | "starmap"
+  | "discovery"
+  | "timeline"
+  | "observatory"
+  | "compare"
+  | "favorites";
 
 interface AppHeaderProps {
   activeTab?: NavTab;
   onTabChange?: (tab: NavTab) => void;
+  favoritesCount?: number;
 }
 
 export default function AppHeader({
   activeTab = "dashboard",
   onTabChange,
+  favoritesCount = 0,
 }: AppHeaderProps) {
   const [timeString, setTimeString] = useState("");
 
@@ -41,16 +50,16 @@ export default function AppHeader({
 
   return (
     <motion.header
-      className="relative z-20 flex flex-wrap items-center justify-between gap-4 px-4 lg:px-8 py-3 border-b border-[var(--border)] bg-[#030614]/90 backdrop-blur-md"
+      className="relative z-20 flex flex-wrap items-center justify-between gap-3 px-3 sm:px-6 py-2.5 border-b border-[var(--border)] bg-[#030614]/90 backdrop-blur-md select-none font-mono"
       initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
     >
       {/* Left: Brand + Subtitle */}
       <div className="flex items-center gap-3">
-        <div className="relative w-9 h-9 flex items-center justify-center rounded-lg border border-[var(--accent-cyan)]/30 bg-[#070e24]/80 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+        <div className="relative w-8 h-8 flex items-center justify-center rounded-lg border border-[var(--accent-cyan)]/30 bg-[#070e24]/80 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
           <div className="absolute inset-0 rounded-lg border-t border-l border-[var(--accent-cyan)] pointer-events-none" />
-          <svg width="22" height="22" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 32 32" fill="none" aria-hidden="true">
             <circle cx="16" cy="16" r="14" stroke="#06b6d4" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
             <ellipse
               cx="16"
@@ -71,7 +80,7 @@ export default function AppHeader({
         <div>
           <div className="flex items-center gap-2">
             <span
-              className="text-lg lg:text-xl font-black tracking-widest uppercase font-mono"
+              className="text-base sm:text-lg font-black tracking-widest uppercase"
               style={{
                 background: "linear-gradient(90deg, #ffffff 0%, #93c5fd 50%, #c4b5fd 100%)",
                 WebkitBackgroundClip: "text",
@@ -80,22 +89,19 @@ export default function AppHeader({
             >
               EXOSENSE
             </span>
-            <span className="font-mono text-[0.6rem] px-1.5 py-0.5 rounded bg-[var(--accent-blue)]/15 border border-[var(--accent-blue)]/30 text-[var(--accent-cyan-bright)] tracking-widest font-semibold uppercase">
-              SYS.V8
+            <span className="text-[0.55rem] px-1.5 py-0.5 rounded bg-[var(--accent-blue)]/15 border border-[var(--accent-blue)]/30 text-[var(--accent-cyan-bright)] tracking-widest font-semibold uppercase">
+              SYS.V9
             </span>
           </div>
-          <p className="text-[0.6rem] font-mono tracking-widest uppercase text-[var(--muted-light)] opacity-80">
-            Exoplanet Intelligence & Deep-Space Exploration System
-          </p>
         </div>
       </div>
 
-      {/* Center: Mission Mode Navigation Switcher */}
+      {/* Center: Mission Navigation Switcher */}
       {onTabChange && (
-        <nav className="flex items-center gap-1 p-1 rounded-lg bg-[#050a20] border border-[var(--border)] font-mono text-xs shadow-inner flex-wrap">
+        <nav className="flex items-center gap-1 p-1 rounded-lg bg-[#050a20] border border-[var(--border)] text-xs shadow-inner flex-wrap">
           <button
             onClick={() => onTabChange("dashboard")}
-            className={`px-3 py-1.5 rounded transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 py-1 rounded transition-all flex items-center gap-1.5 cursor-pointer text-[0.68rem] ${
               activeTab === "dashboard"
                 ? "bg-[var(--accent-blue)]/20 text-white border border-[var(--accent-blue)]/50 font-bold shadow-[0_0_12px_rgba(59,130,246,0.3)]"
                 : "text-[var(--muted-light)] hover:text-white border border-transparent"
@@ -107,7 +113,7 @@ export default function AppHeader({
 
           <button
             onClick={() => onTabChange("starmap")}
-            className={`px-3 py-1.5 rounded transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 py-1 rounded transition-all flex items-center gap-1.5 cursor-pointer text-[0.68rem] ${
               activeTab === "starmap"
                 ? "bg-[var(--accent-cyan)]/20 text-[var(--accent-cyan-bright)] border border-[var(--accent-cyan)]/50 font-bold shadow-[0_0_12px_rgba(6,182,212,0.3)]"
                 : "text-[var(--muted-light)] hover:text-white border border-transparent"
@@ -118,46 +124,87 @@ export default function AppHeader({
           </button>
 
           <button
+            onClick={() => onTabChange("discovery")}
+            className={`px-2.5 py-1 rounded transition-all flex items-center gap-1.5 cursor-pointer text-[0.68rem] ${
+              activeTab === "discovery"
+                ? "bg-[var(--accent-cyan)]/20 text-[var(--accent-cyan-bright)] border border-[var(--accent-cyan)]/50 font-bold shadow-[0_0_12px_rgba(6,182,212,0.3)]"
+                : "text-[var(--muted-light)] hover:text-white border border-transparent"
+            }`}
+          >
+            <span>🔍</span>
+            <span>DISCOVERY</span>
+          </button>
+
+          <button
+            onClick={() => onTabChange("timeline")}
+            className={`px-2.5 py-1 rounded transition-all flex items-center gap-1.5 cursor-pointer text-[0.68rem] ${
+              activeTab === "timeline"
+                ? "bg-[var(--accent-violet)]/20 text-[var(--accent-violet-bright)] border border-[var(--accent-violet)]/50 font-bold shadow-[0_0_12px_rgba(139,92,246,0.3)]"
+                : "text-[var(--muted-light)] hover:text-white border border-transparent"
+            }`}
+          >
+            <span>📈</span>
+            <span>TIMELINE</span>
+          </button>
+
+          <button
             onClick={() => onTabChange("observatory")}
-            className={`px-3 py-1.5 rounded transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 py-1 rounded transition-all flex items-center gap-1.5 cursor-pointer text-[0.68rem] ${
               activeTab === "observatory"
                 ? "bg-[var(--accent-cyan)]/20 text-[var(--accent-cyan-bright)] border border-[var(--accent-cyan)]/50 font-bold shadow-[0_0_12px_rgba(6,182,212,0.3)]"
                 : "text-[var(--muted-light)] hover:text-white border border-transparent"
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-[#22d3ee]" />
+            <span>🔭</span>
             <span>OBSERVATORY</span>
           </button>
 
           <button
             onClick={() => onTabChange("compare")}
-            className={`px-3 py-1.5 rounded transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-2.5 py-1 rounded transition-all flex items-center gap-1.5 cursor-pointer text-[0.68rem] ${
               activeTab === "compare"
                 ? "bg-[var(--accent-violet)]/20 text-[var(--accent-violet-bright)] border border-[var(--accent-violet)]/50 font-bold shadow-[0_0_12px_rgba(139,92,246,0.3)]"
                 : "text-[var(--muted-light)] hover:text-white border border-transparent"
             }`}
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-violet-bright)]" />
+            <span>⚖️</span>
             <span>COMPARE</span>
+          </button>
+
+          <button
+            onClick={() => onTabChange("favorites")}
+            className={`px-2.5 py-1 rounded transition-all flex items-center gap-1.5 cursor-pointer text-[0.68rem] ${
+              activeTab === "favorites"
+                ? "bg-amber-500/25 text-amber-300 border border-amber-500/50 font-bold shadow-[0_0_12px_rgba(245,158,11,0.3)]"
+                : "text-[var(--muted-light)] hover:text-amber-300 border border-transparent"
+            }`}
+          >
+            <span>⭐</span>
+            <span>MY MISSION</span>
+            {favoritesCount > 0 && (
+              <span className="px-1.5 py-0.2 rounded-full bg-amber-500/30 text-amber-300 text-[0.55rem] font-bold">
+                {favoritesCount}
+              </span>
+            )}
           </button>
         </nav>
       )}
 
       {/* Right: Mission Telemetry Status Indicators */}
-      <div className="flex items-center gap-3 lg:gap-4 flex-wrap">
-        <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#070d22] border border-[var(--border)] font-mono text-[0.68rem] text-[var(--muted-light)]">
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <div className="hidden xl:flex items-center gap-1.5 px-2 py-1 rounded bg-[#070d22] border border-[var(--border)] text-[0.65rem] text-[var(--muted-light)]">
           <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-cyan)] animate-pulse" />
           <span className="tabular-nums tracking-wider text-slate-300">{timeString || "UTC SYNCING..."}</span>
         </div>
 
-        <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-[#070d22] border border-[var(--border)] font-mono text-[0.65rem]">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping opacity-75" />
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#070d22] border border-[var(--border)] text-[0.62rem]">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping opacity-75" />
           <span className="text-[var(--muted)]">DATA:</span>
           <span className="text-emerald-400 font-semibold tracking-wider">NASA ARCHIVE</span>
         </div>
 
-        <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded bg-[#070d22] border border-[var(--border)] font-mono text-[0.65rem]">
-          <span className="w-2 h-2 rounded-full bg-[var(--accent-violet-bright)] shadow-[0_0_8px_#a78bfa]" />
+        <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded bg-[#070d22] border border-[var(--border)] text-[0.62rem]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-violet-bright)] shadow-[0_0_8px_#a78bfa]" />
           <span className="text-[var(--muted)]">AI:</span>
           <span className="text-[var(--accent-violet-bright)] font-semibold tracking-wider">COPILOT READY</span>
         </div>

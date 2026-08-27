@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useMemo } from "react";
 import { motion } from "framer-motion";
@@ -9,6 +9,7 @@ interface MissionTelemetryBarProps {
   selectedPlanet: Exoplanet | null;
   totalFiltered: number;
   isLoading: boolean;
+  favoritesCount?: number;
 }
 
 export default function MissionTelemetryBar({
@@ -16,6 +17,7 @@ export default function MissionTelemetryBar({
   selectedPlanet,
   totalFiltered,
   isLoading,
+  favoritesCount = 0,
 }: MissionTelemetryBarProps) {
   const { uniqueMethods, avgRadius, avgDist } = useMemo(() => {
     if (planets.length === 0) {
@@ -124,7 +126,7 @@ export default function MissionTelemetryBar({
         </div>
       </motion.div>
 
-      {/* Metric 6: Selected Target Lock */}
+      {/* Metric 6: Selected Target Lock & Saved Manifest */}
       <motion.div
         className="hud-panel-subtle rounded-lg p-2.5 border border-[var(--border)] flex flex-col justify-between"
         style={
@@ -137,18 +139,19 @@ export default function MissionTelemetryBar({
         }
       >
         <div className="flex items-center justify-between text-[0.6rem] font-mono tracking-widest uppercase text-[var(--muted)]">
-          <span>TARGET LOCK</span>
+          <span>{selectedPlanet ? "TARGET LOCK" : "MY MISSION"}</span>
           <span
-            className="w-1.5 h-1.5 rounded-full"
-            style={{ backgroundColor: selectedPlanet ? "#a78bfa" : "#64748b" }}
-          />
+            className="text-[0.58rem] font-mono font-bold text-amber-400"
+          >
+            ★ {favoritesCount}
+          </span>
         </div>
         <div className="mt-1 truncate">
           <span
             className="text-xs lg:text-sm font-bold font-mono truncate block"
             style={{ color: selectedPlanet ? "#c4b5fd" : "var(--muted-light)" }}
           >
-            {selectedPlanet ? selectedPlanet.pl_name : "SCANNING..."}
+            {selectedPlanet ? selectedPlanet.pl_name : `${favoritesCount} SAVED WORLDS`}
           </span>
         </div>
       </motion.div>
