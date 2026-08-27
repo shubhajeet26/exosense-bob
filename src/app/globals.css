@@ -2,25 +2,47 @@
 
 /* ─── Space theme design tokens ─── */
 :root {
-  --background: #03040d;
-  --foreground: #e8eaf6;
-  --surface: #0b0e1f;
-  --border: #1e2240;
+  --background: #02040a;
+  --foreground: #f1f5f9;
+  --surface: #070b19;
+  --surface-raised: #0d142b;
+  --surface-overlay: rgba(8, 14, 34, 0.82);
+  --border: #172346;
+  --border-bright: #273e78;
+  --border-glow: rgba(59, 130, 246, 0.35);
+  
   --accent-blue: #3b82f6;
+  --accent-blue-bright: #60a5fa;
   --accent-violet: #8b5cf6;
-  --accent-cyan: #22d3ee;
+  --accent-violet-bright: #a78bfa;
+  --accent-cyan: #06b6d4;
+  --accent-cyan-bright: #22d3ee;
+  --accent-emerald: #10b981;
+  --accent-amber: #f59e0b;
+  
   --muted: #64748b;
+  --muted-light: #94a3b8;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-overlay: var(--surface-overlay);
   --color-border: var(--border);
+  --color-border-bright: var(--border-bright);
+  --color-border-glow: var(--border-glow);
   --color-accent-blue: var(--accent-blue);
+  --color-accent-blue-bright: var(--accent-blue-bright);
   --color-accent-violet: var(--accent-violet);
+  --color-accent-violet-bright: var(--accent-violet-bright);
   --color-accent-cyan: var(--accent-cyan);
+  --color-accent-cyan-bright: var(--accent-cyan-bright);
+  --color-accent-emerald: var(--accent-emerald);
+  --color-accent-amber: var(--accent-amber);
   --color-muted: var(--muted);
+  --color-muted-light: var(--muted-light);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -49,26 +71,145 @@ body {
 
 /* ─── Scrollbar ─── */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--background);
+  background: #030612;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 3px;
+  background: #1b2850;
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-blue);
+  background: var(--accent-cyan);
 }
 
 /* ─── Utility: glow text helpers ─── */
 .text-glow-blue {
-  text-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 40px rgba(59, 130, 246, 0.4);
+  text-shadow: 0 0 16px rgba(59, 130, 246, 0.75), 0 0 32px rgba(59, 130, 246, 0.35);
 }
 .text-glow-violet {
-  text-shadow: 0 0 20px rgba(139, 92, 246, 0.8), 0 0 40px rgba(139, 92, 246, 0.4);
+  text-shadow: 0 0 16px rgba(139, 92, 246, 0.75), 0 0 32px rgba(139, 92, 246, 0.35);
 }
 .text-glow-cyan {
-  text-shadow: 0 0 16px rgba(34, 211, 238, 0.9), 0 0 32px rgba(34, 211, 238, 0.4);
+  text-shadow: 0 0 14px rgba(34, 211, 238, 0.85), 0 0 28px rgba(34, 211, 238, 0.4);
+}
+.text-glow-emerald {
+  text-shadow: 0 0 12px rgba(16, 185, 129, 0.8), 0 0 24px rgba(16, 185, 129, 0.35);
+}
+
+/* ─── Futuristic HUD Grid & Overlay ─── */
+.hud-grid-bg {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(59, 130, 246, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(59, 130, 246, 0.035) 1px, transparent 1px);
+}
+
+.hud-panel {
+  position: relative;
+  background: rgba(7, 12, 28, 0.82);
+  border: 1px solid rgba(30, 48, 92, 0.85);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(59, 130, 246, 0.06);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.hud-panel-subtle {
+  position: relative;
+  background: rgba(5, 9, 22, 0.65);
+  border: 1px solid rgba(23, 36, 70, 0.75);
+  backdrop-filter: blur(8px);
+}
+
+/* ─── Corner Brackets for HUD Panels ─── */
+.corner-bracket {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  pointer-events: none;
+}
+.corner-tl {
+  top: -1px;
+  left: -1px;
+  border-top: 2px solid var(--accent-cyan);
+  border-left: 2px solid var(--accent-cyan);
+}
+.corner-tr {
+  top: -1px;
+  right: -1px;
+  border-top: 2px solid var(--accent-cyan);
+  border-right: 2px solid var(--accent-cyan);
+}
+.corner-bl {
+  bottom: -1px;
+  left: -1px;
+  border-bottom: 2px solid var(--accent-cyan);
+  border-left: 2px solid var(--accent-cyan);
+}
+.corner-br {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 2px solid var(--accent-cyan);
+  border-right: 2px solid var(--accent-cyan);
+}
+
+/* Subtle corner brackets */
+.corner-bracket-subtle {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  pointer-events: none;
+}
+.corner-subtle-tl {
+  top: -1px;
+  left: -1px;
+  border-top: 1.5px solid rgba(96, 165, 250, 0.6);
+  border-left: 1.5px solid rgba(96, 165, 250, 0.6);
+}
+.corner-subtle-tr {
+  top: -1px;
+  right: -1px;
+  border-top: 1.5px solid rgba(96, 165, 250, 0.6);
+  border-right: 1.5px solid rgba(96, 165, 250, 0.6);
+}
+.corner-subtle-bl {
+  bottom: -1px;
+  left: -1px;
+  border-bottom: 1.5px solid rgba(96, 165, 250, 0.6);
+  border-left: 1.5px solid rgba(96, 165, 250, 0.6);
+}
+.corner-subtle-br {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 1.5px solid rgba(96, 165, 250, 0.6);
+  border-right: 1.5px solid rgba(96, 165, 250, 0.6);
+}
+
+/* ─── Tech Telemetry Borders ─── */
+.telemetry-border-t {
+  border-top: 1px dashed rgba(59, 130, 246, 0.3);
+}
+.telemetry-border-b {
+  border-bottom: 1px dashed rgba(59, 130, 246, 0.3);
+}
+
+/* ─── Radar / Scan Animations ─── */
+@keyframes radar-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-radar-sweep {
+  animation: radar-sweep 4s linear infinite;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.96); }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2.5s ease-in-out infinite;
 }

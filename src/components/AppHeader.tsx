@@ -1,67 +1,111 @@
-"use client";
+﻿"use client";
 
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 
 export default function AppHeader() {
+  const [timeString, setTimeString] = useState("");
+
+  useEffect(() => {
+    function updateClock() {
+      const now = new Date();
+      const utcYear = now.getUTCFullYear();
+      const start = new Date(Date.UTC(utcYear, 0, 0));
+      const diff = now.getTime() - start.getTime();
+      const oneDay = 1000 * 60 * 60 * 24;
+      const dayOfYear = Math.floor(diff / oneDay);
+      
+      const hours = String(now.getUTCHours()).padStart(2, "0");
+      const minutes = String(now.getUTCMinutes()).padStart(2, "0");
+      const seconds = String(now.getUTCSeconds()).padStart(2, "0");
+      
+      setTimeString(`UTC ${utcYear}.${String(dayOfYear).padStart(3, "0")} // ${hours}:${minutes}:${seconds}`);
+    }
+
+    updateClock();
+    const interval = setInterval(updateClock, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <motion.header
-      className="relative z-20 flex items-center justify-between px-6 py-4 border-b border-[var(--border)]"
-      style={{ background: "rgba(11,14,31,0.75)", backdropFilter: "blur(12px)" }}
-      initial={{ opacity: 0, y: -16 }}
+      className="relative z-20 flex flex-wrap items-center justify-between gap-4 px-4 lg:px-8 py-3.5 border-b border-[var(--border)] bg-[#030614]/85 backdrop-blur-md"
+      initial={{ opacity: 0, y: -12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: "easeOut" }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
     >
-      {/* Logo / wordmark */}
-      <div className="flex items-center gap-3">
-        {/* SVG planet logo placeholder */}
-        <svg
-          width="32"
-          height="32"
-          viewBox="0 0 32 32"
-          fill="none"
-          aria-hidden="true"
-        >
-          {/* Orbit ring */}
-          <ellipse
-            cx="16"
-            cy="16"
-            rx="14"
-            ry="5"
-            stroke="#818cf8"
-            strokeWidth="1.5"
-            fill="none"
-            transform="rotate(-30 16 16)"
-            opacity="0.7"
-          />
-          {/* Planet body */}
-          <circle cx="16" cy="16" r="7" fill="#3b82f6" opacity="0.9" />
-          {/* Highlight */}
-          <circle cx="13.5" cy="13.5" r="2.2" fill="white" opacity="0.2" />
-        </svg>
+      {/* Left: Brand + Mission Title */}
+      <div className="flex items-center gap-3.5">
+        {/* Futuristic Orbital Reticle Logo */}
+        <div className="relative w-9 h-9 flex items-center justify-center rounded-lg border border-[var(--accent-cyan)]/30 bg-[#070e24]/80 shadow-[0_0_15px_rgba(6,182,212,0.15)]">
+          <div className="absolute inset-0 rounded-lg border-t border-l border-[var(--accent-cyan)] pointer-events-none" />
+          <svg width="22" height="22" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+            <circle cx="16" cy="16" r="14" stroke="#06b6d4" strokeWidth="1" strokeDasharray="3 3" opacity="0.4" />
+            <ellipse
+              cx="16"
+              cy="16"
+              rx="13"
+              ry="4.5"
+              stroke="#818cf8"
+              strokeWidth="1.5"
+              fill="none"
+              transform="rotate(-28 16 16)"
+              opacity="0.85"
+            />
+            <circle cx="16" cy="16" r="5" fill="#3b82f6" />
+            <circle cx="14" cy="14" r="1.5" fill="#ffffff" opacity="0.8" />
+          </svg>
+        </div>
 
-        <span
-          className="text-xl font-bold tracking-tight"
-          style={{
-            background:
-              "linear-gradient(90deg, #93c5fd 0%, #c4b5fd 100%)",
-            WebkitBackgroundClip: "text",
-            WebkitTextFillColor: "transparent",
-          }}
-        >
-          Exosense
-        </span>
+        <div>
+          <div className="flex items-center gap-2">
+            <span
+              className="text-lg lg:text-xl font-black tracking-widest uppercase font-mono"
+              style={{
+                background: "linear-gradient(90deg, #ffffff 0%, #93c5fd 50%, #c4b5fd 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
+              EXOSENSE
+            </span>
+            <span className="font-mono text-[0.6rem] px-1.5 py-0.5 rounded bg-[var(--accent-blue)]/15 border border-[var(--accent-blue)]/30 text-[var(--accent-cyan-bright)] tracking-widest font-semibold uppercase">
+              SYS.V5
+            </span>
+          </div>
+          <p className="text-[0.62rem] font-mono tracking-widest uppercase text-[var(--muted-light)] opacity-80">
+            Exoplanet Intelligence & Deep-Space Exploration System
+          </p>
+        </div>
       </div>
 
-      {/* Right-side nav placeholder */}
-      <nav className="flex items-center gap-4 text-sm text-[var(--muted)]">
-        <span className="hidden sm:inline">NASA Exoplanet Archive</span>
-        <span
-          className="px-2 py-0.5 rounded text-xs border border-[var(--accent-blue)] text-[var(--accent-blue)]"
-          style={{ fontSize: "0.7rem", letterSpacing: "0.08em" }}
-        >
-          ALPHA
+      {/* Right: Mission Telemetry Status Indicators */}
+      <div className="flex items-center gap-3 lg:gap-5 flex-wrap">
+        {/* Mission UTC Clock */}
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#070d22] border border-[var(--border)] font-mono text-[0.68rem] text-[var(--muted-light)]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-cyan)] animate-pulse" />
+          <span className="tabular-nums tracking-wider text-slate-300">{timeString || "UTC SYNCING..."}</span>
+        </div>
+
+        {/* NASA Data Link Status */}
+        <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-[#070d22] border border-[var(--border)] font-mono text-[0.65rem]">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping opacity-75" />
+          <span className="text-[var(--muted)]">DATA LINK:</span>
+          <span className="text-emerald-400 font-semibold tracking-wider">NASA ARCHIVE</span>
+        </div>
+
+        {/* AI System Status */}
+        <div className="flex items-center gap-2 px-2.5 py-1 rounded bg-[#070d22] border border-[var(--border)] font-mono text-[0.65rem]">
+          <span className="w-2 h-2 rounded-full bg-[var(--accent-violet-bright)] shadow-[0_0_8px_#a78bfa]" />
+          <span className="text-[var(--muted)]">AI ENGINE:</span>
+          <span className="text-[var(--accent-violet-bright)] font-semibold tracking-wider">COPILOT ACTIVE</span>
+        </div>
+
+        {/* System Online Badge */}
+        <span className="hidden md:inline-flex px-2 py-1 rounded text-[0.62rem] font-mono tracking-widest uppercase border border-emerald-500/30 bg-emerald-500/10 text-emerald-300 font-semibold">
+          SYS_ONLINE
         </span>
-      </nav>
+      </div>
     </motion.header>
   );
 }

@@ -1,8 +1,9 @@
-"use client";
+﻿"use client";
 
-// ─── Spinner ──────────────────────────────────────────────────────────────────
+import { motion } from "framer-motion";
+import HudPanel from "./HudPanel";
 
-export function Spinner({ size = 28 }: { size?: number }) {
+export function Spinner({ size = 24 }: { size?: number }) {
   return (
     <svg
       width={size}
@@ -10,8 +11,7 @@ export function Spinner({ size = 28 }: { size?: number }) {
       viewBox="0 0 24 24"
       fill="none"
       aria-label="Loading"
-      className="animate-spin"
-      style={{ color: "var(--accent-blue)" }}
+      className="animate-spin text-[var(--accent-cyan)]"
     >
       <circle
         cx="12"
@@ -31,81 +31,65 @@ export function Spinner({ size = 28 }: { size?: number }) {
   );
 }
 
-// ─── LoadingOverlay ───────────────────────────────────────────────────────────
-
 export function LoadingState() {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-      <Spinner size={40} />
-      <p className="text-sm text-[var(--muted)] animate-pulse">
-        Querying NASA Exoplanet Archive…
-      </p>
-    </div>
+    <HudPanel moduleCode="SYS-FETCH" title="Archive Uplink" cornerAccent="cyan">
+      <div className="flex flex-col items-center justify-center gap-4 py-16 text-center font-mono">
+        <div className="relative flex items-center justify-center">
+          <div className="w-16 h-16 rounded-full border border-dashed border-[var(--accent-cyan)] animate-radar-sweep opacity-50" />
+          <div className="absolute">
+            <Spinner size={32} />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[var(--accent-cyan-bright)]">
+            Transmitting Telemetry Query
+          </p>
+          <p className="text-[0.68rem] text-[var(--muted)]">
+            Retrieving exoplanet observations from NASA Exoplanet Archive...
+          </p>
+        </div>
+      </div>
+    </HudPanel>
   );
 }
-
-// ─── Empty state ──────────────────────────────────────────────────────────────
 
 export function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-      {/* SVG planet illustration */}
-      <svg
-        width="60"
-        height="60"
-        viewBox="0 0 60 60"
-        fill="none"
-        aria-hidden="true"
-      >
-        <circle cx="30" cy="30" r="14" fill="#1e2240" stroke="var(--border)" strokeWidth="1.5" />
-        <ellipse
-          cx="30"
-          cy="30"
-          rx="28"
-          ry="10"
-          stroke="var(--muted)"
-          strokeWidth="1.2"
-          fill="none"
-          transform="rotate(-20 30 30)"
-          strokeDasharray="4 3"
-        />
-        {/* Question mark */}
-        <text
-          x="30"
-          y="35"
-          textAnchor="middle"
-          fill="#64748b"
-          fontSize="14"
-          fontFamily="system-ui"
-        >
-          ?
-        </text>
-      </svg>
-      <div className="space-y-1.5">
-        <p className="text-sm font-medium text-[var(--foreground)]">
-          No planets found
-        </p>
-        <p className="text-xs text-[var(--muted)] max-w-xs">
-          Try widening your filter ranges — this corner of the universe appears
-          empty.
-        </p>
+    <HudPanel moduleCode="SYS-EMPTY" title="Zero Telemetry Matches" cornerAccent="cyan">
+      <div className="flex flex-col items-center justify-center gap-3 py-16 text-center font-mono">
+        <div className="w-12 h-12 rounded-full border border-[var(--border)] bg-[#040818] flex items-center justify-center text-[var(--muted)] text-lg">
+          ∅
+        </div>
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-widest text-[var(--foreground)]">
+            No Worlds Match Parameter Filter
+          </p>
+          <p className="text-[0.68rem] text-[var(--muted-light)] max-w-sm">
+            Adjust discovery window, radius bounds, or detection methods to expand matrix scope.
+          </p>
+        </div>
       </div>
-    </div>
+    </HudPanel>
   );
 }
 
-// ─── Error state ──────────────────────────────────────────────────────────────
-
 export function ErrorState({ message }: { message: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <circle cx="12" cy="12" r="10" stroke="#f87171" strokeWidth="1.5" />
-        <path d="M12 7v5" stroke="#f87171" strokeWidth="2" strokeLinecap="round" />
-        <circle cx="12" cy="16" r="1" fill="#f87171" />
-      </svg>
-      <p className="text-sm font-medium text-red-400">Failed to load data</p>
-      <p className="text-xs text-[var(--muted)] max-w-xs break-all">{message}</p>
-    </div>
+    <HudPanel moduleCode="SYS-ERR" title="Telemetry Feed Interrupted" badge={{ text: "DEGRADED", variant: "amber" }} cornerAccent="cyan">
+      <div className="flex flex-col items-center justify-center gap-3 py-16 text-center font-mono">
+        <div className="w-12 h-12 rounded-full border border-amber-500/40 bg-amber-500/10 flex items-center justify-center text-amber-400 text-lg">
+          ⚠
+        </div>
+        <div className="space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-widest text-amber-300">
+            Archive Telemetry Error
+          </p>
+          <p className="text-[0.68rem] text-[var(--muted-light)] max-w-sm break-all">
+            {message}
+          </p>
+        </div>
+      </div>
+    </HudPanel>
   );
 }

@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import { motion } from "framer-motion";
 import { FilterParams } from "@/lib/nasa";
 import { DISCOVERY_METHODS } from "@/lib/constants";
 import { FilterValues, DEFAULT_FILTERS } from "@/lib/filterDefaults";
+import HudPanel from "./HudPanel";
 
-// Re-export so existing imports from this file continue to work
 export { DISCOVERY_METHODS } from "@/lib/constants";
 export type { FilterValues } from "@/lib/filterDefaults";
 export { DEFAULT_FILTERS } from "@/lib/filterDefaults";
@@ -16,16 +16,16 @@ interface Props {
   isLoading: boolean;
 }
 
-// Shared input style tokens
-const labelCls =
-  "block text-[0.68rem] tracking-widest uppercase text-[var(--muted)] mb-1.5 select-none";
-const inputCls =
-  "w-full bg-[var(--surface)] border border-[var(--border)] rounded px-2.5 py-1.5 text-sm text-[var(--foreground)] focus:outline-none focus:border-[var(--accent-blue)] transition-colors placeholder:text-[var(--muted)]";
-const selectCls =
-  "w-full bg-[var(--surface)] border border-[var(--border)] rounded px-2.5 py-1.5 text-sm text-[var(--foreground)] focus:outline-none focus:border-[var(--accent-blue)] transition-colors cursor-pointer";
+const techLabelCls =
+  "block font-mono text-[0.62rem] tracking-widest uppercase text-[var(--muted-light)] mb-1 select-none flex items-center justify-between";
+const techInputCls =
+  "w-full bg-[#05091a] border border-[var(--border)] rounded px-2.5 py-1.5 font-mono text-xs text-[var(--foreground)] focus:outline-none focus:border-[var(--accent-cyan)] transition-colors placeholder:text-[var(--muted)]";
+const techSelectCls =
+  "w-full bg-[#05091a] border border-[var(--border)] rounded px-2.5 py-1.5 font-mono text-xs text-[var(--foreground)] focus:outline-none focus:border-[var(--accent-cyan)] transition-colors cursor-pointer";
 
-function RangeRow({
+function ParameterRangeRow({
   label,
+  unit,
   minKey,
   maxKey,
   values,
@@ -34,6 +34,7 @@ function RangeRow({
   min = 0,
 }: {
   label: string;
+  unit: string;
   minKey: keyof FilterValues;
   maxKey: keyof FilterValues;
   values: FilterValues;
@@ -42,12 +43,15 @@ function RangeRow({
   min?: number;
 }) {
   return (
-    <div>
-      <span className={labelCls}>{label}</span>
-      <div className="flex gap-2">
+    <div className="space-y-1">
+      <div className={techLabelCls}>
+        <span>{label}</span>
+        <span className="text-[var(--accent-cyan-bright)] opacity-80">{unit}</span>
+      </div>
+      <div className="flex items-center gap-1.5">
         <input
           type="number"
-          className={inputCls}
+          className={techInputCls}
           value={values[minKey] as number}
           min={min}
           step={step}
@@ -56,10 +60,10 @@ function RangeRow({
             onChange({ ...values, [minKey]: Number(e.target.value) })
           }
         />
-        <span className="self-center text-[var(--muted)] text-xs">–</span>
+        <span className="font-mono text-[var(--muted)] text-xs select-none">→</span>
         <input
           type="number"
-          className={inputCls}
+          className={techInputCls}
           value={values[maxKey] as number}
           min={min}
           step={step}
@@ -91,83 +95,90 @@ export default function FilterControls({ values, onChange, isLoading }: Props) {
     onChange({ ...DEFAULT_FILTERS });
   }
 
+  const activeCount = [
+    values.yearMin !== DEFAULT_FILTERS.yearMin || values.yearMax !== DEFAULT_FILTERS.yearMax,
+    values.radiusMin > 0 || values.radiusMax < 30,
+    Boolean(values.discoveryMethod),
+    values.distanceMin > 0 || values.distanceMax < 3000,
+  ].filter(Boolean).length;
+
   return (
-    <aside
-      className="w-full lg:w-64 shrink-0 rounded-xl border border-[var(--border)] p-4 space-y-5"
-      style={{ background: "rgba(11,14,31,0.8)", backdropFilter: "blur(10px)" }}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xs tracking-widest uppercase text-[var(--accent-cyan)] font-semibold">
-          Filters
-        </h2>
+    <HudPanel
+      title="Mission Parameters"
+      moduleCode="PAR-01"
+      badge={activeCount > 0 ? { text: `${activeCount} ACTIVE`, variant: "cyan" } : { text: "DEFAULT", variant: "muted" }}
+      headerRight={
         <motion.button
           onClick={reset}
           disabled={isLoading}
-          className="text-[0.65rem] tracking-wider uppercase text-[var(--muted)] hover:text-[var(--foreground)] transition-colors disabled:opacity-40 cursor-pointer"
-          whileHover={isLoading ? {} : { scale: 1.08 }}
-          whileTap={isLoading   ? {} : { scale: 0.94 }}
-          transition={{ duration: 0.12 }}
+          className="font-mono text-[0.6rem] tracking-wider uppercase text-[var(--muted-light)] hover:text-white px-2 py-0.5 rounded border border-[var(--border)] hover:border-[var(--accent-cyan)] transition-colors disabled:opacity-40 cursor-pointer"
+          whileHover={isLoading ? {} : { scale: 1.05 }}
+          whileTap={isLoading ? {} : { scale: 0.95 }}
         >
           Reset
         </motion.button>
+      }
+      cornerAccent="cyan"
+    >
+      <div className="space-y-4">
+        <ParameterRangeRow
+          label="Discovery Window"
+          unit="YEAR"
+          minKey="yearMin"
+          maxKey="yearMax"
+          values={values}
+          onChange={onChange}
+          min={1990}
+        />
+
+        <ParameterRangeRow
+          label="Planet Radius Range"
+          unit="R⊕"
+          minKey="radiusMin"
+          maxKey="radiusMax"
+          values={values}
+          onChange={onChange}
+          step={0.5}
+        />
+
+        <ParameterRangeRow
+          label="Distance Range"
+          unit="PARSECS"
+          minKey="distanceMin"
+          maxKey="distanceMax"
+          values={values}
+          onChange={onChange}
+          step={10}
+        />
+
+        <div className="space-y-1">
+          <div className={techLabelCls}>
+            <span>Detection Technique</span>
+            <span className="text-[var(--accent-cyan-bright)] opacity-80">METHOD</span>
+          </div>
+          <select
+            className={techSelectCls}
+            value={values.discoveryMethod}
+            onChange={(e) =>
+              onChange({ ...values, discoveryMethod: e.target.value })
+            }
+          >
+            <option value="">ALL DETECTION METHODS</option>
+            {DISCOVERY_METHODS.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {isLoading && (
+          <div className="pt-1 flex items-center justify-center gap-2 font-mono text-[0.62rem] text-[var(--accent-cyan-bright)] animate-pulse">
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-cyan)]" />
+            <span>TRANSMITTING QUERY TO ARCHIVE...</span>
+          </div>
+        )}
       </div>
-
-      {/* Discovery year */}
-      <RangeRow
-        label="Discovery Year"
-        minKey="yearMin"
-        maxKey="yearMax"
-        values={values}
-        onChange={onChange}
-        min={1990}
-      />
-
-      {/* Radius */}
-      <RangeRow
-        label="Radius (R⊕)"
-        minKey="radiusMin"
-        maxKey="radiusMax"
-        values={values}
-        onChange={onChange}
-        step={0.5}
-      />
-
-      {/* Distance from Earth */}
-      <RangeRow
-        label="Distance (pc)"
-        minKey="distanceMin"
-        maxKey="distanceMax"
-        values={values}
-        onChange={onChange}
-        step={10}
-      />
-
-      {/* Discovery method */}
-      <div>
-        <span className={labelCls}>Discovery Method</span>
-        <select
-          className={selectCls}
-          value={values.discoveryMethod}
-          onChange={(e) =>
-            onChange({ ...values, discoveryMethod: e.target.value })
-          }
-        >
-          <option value="">All methods</option>
-          {DISCOVERY_METHODS.map((m) => (
-            <option key={m} value={m}>
-              {m}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Live indicator */}
-      {isLoading && (
-        <p className="text-[0.65rem] tracking-wider text-[var(--accent-blue)] animate-pulse text-center">
-          Fetching data…
-        </p>
-      )}
-    </aside>
+    </HudPanel>
   );
 }

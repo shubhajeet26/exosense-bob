@@ -1,65 +1,37 @@
-"use client";
+﻿"use client";
 
 import { useState, useMemo, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Exoplanet } from "@/lib/nasa";
+import HudPanel from "./HudPanel";
 
 type SortKey = keyof Exoplanet;
 type SortDir = "asc" | "desc";
 
 const PAGE_SIZE = 15;
 
-const COLUMNS: { key: SortKey; label: string; fmt?: (v: unknown) => string }[] = [
-  { key: "pl_name",         label: "Planet" },
-  { key: "hostname",        label: "Host Star" },
-  { key: "disc_year",       label: "Year",       fmt: (v) => String(v ?? "—") },
-  { key: "discoverymethod", label: "Method" },
-  { key: "pl_rade",         label: "R (R⊕)",     fmt: (v) => v != null ? (v as number).toFixed(2) : "—" },
-  { key: "pl_masse",        label: "M (M⊕)",     fmt: (v) => v != null ? (v as number).toFixed(2) : "—" },
-  { key: "pl_orbper",       label: "Period (d)",  fmt: (v) => v != null ? (v as number).toFixed(2) : "—" },
-  { key: "pl_orbsmax",      label: "a (AU)",      fmt: (v) => v != null ? (v as number).toFixed(3) : "—" },
-  { key: "sy_dist",         label: "Dist (pc)",   fmt: (v) => v != null ? (v as number).toFixed(1) : "—" },
+const COLUMNS: { key: SortKey; label: string; unit?: string; fmt?: (v: unknown) => string }[] = [
+  { key: "pl_name",         label: "PLANET DESIGNATION" },
+  { key: "hostname",        label: "HOST STAR" },
+  { key: "disc_year",       label: "YEAR",       fmt: (v) => String(v ?? "—") },
+  { key: "discoverymethod", label: "METHOD" },
+  { key: "pl_rade",         label: "RADIUS",     unit: "R⊕", fmt: (v) => v != null ? (v as number).toFixed(2) : "—" },
+  { key: "pl_masse",        label: "MASS",       unit: "M⊕", fmt: (v) => v != null ? (v as number).toFixed(2) : "—" },
+  { key: "pl_orbper",       label: "PERIOD",     unit: "d",  fmt: (v) => v != null ? (v as number).toFixed(2) : "—" },
+  { key: "pl_orbsmax",      label: "AXIS",       unit: "AU", fmt: (v) => v != null ? (v as number).toFixed(3) : "—" },
+  { key: "sy_dist",         label: "DISTANCE",   unit: "pc", fmt: (v) => v != null ? (v as number).toFixed(1) : "—" },
 ];
 
 function SortIcon({ dir }: { dir: SortDir | null }) {
-  if (!dir) return <span className="opacity-20 ml-1">↕</span>;
-  return <span className="ml-1 text-[var(--accent-blue)]">{dir === "asc" ? "↑" : "↓"}</span>;
+  if (!dir) return <span className="opacity-20 ml-1 font-mono text-[0.65rem]">↕</span>;
+  return <span className="ml-1 text-[var(--accent-cyan-bright)] font-mono">{dir === "asc" ? "▲" : "▼"}</span>;
 }
-
-// ─── Micro-interaction button ─────────────────────────────────────────────────
-
-function MotionBtn({
-  children,
-  onClick,
-  disabled,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  disabled: boolean;
-}) {
-  return (
-    <motion.button
-      onClick={onClick}
-      disabled={disabled}
-      className="px-3 py-1 rounded text-xs border border-[var(--border)] text-[var(--muted)] hover:text-[var(--foreground)] hover:border-[var(--accent-blue)] transition-colors disabled:opacity-30 disabled:cursor-default cursor-pointer"
-      whileHover={disabled ? {} : { scale: 1.04 }}
-      whileTap={disabled   ? {} : { scale: 0.96 }}
-      transition={{ duration: 0.12 }}
-    >
-      {children}
-    </motion.button>
-  );
-}
-
-// ─── Props ────────────────────────────────────────────────────────────────────
 
 interface Props {
   planets: Exoplanet[];
   selectedName: string | null;
   onSelect: (planet: Exoplanet) => void;
 }
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 function DataTableInner({ planets, selectedName, onSelect }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>("disc_year");
@@ -92,37 +64,36 @@ function DataTableInner({ planets, selectedName, onSelect }: Props) {
   const safePage   = Math.min(page, totalPages);
   const slice      = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
-  const thCls =
-    "px-3 py-2.5 text-left text-[0.65rem] tracking-widest uppercase text-[var(--muted)] cursor-pointer select-none hover:text-[var(--foreground)] transition-colors whitespace-nowrap";
-  const tdCls = "px-3 py-2 text-xs text-[var(--foreground)] whitespace-nowrap";
-
   return (
-    <div
-      className="rounded-xl border border-[var(--border)] overflow-hidden"
-      style={{ background: "rgba(11,14,31,0.8)", backdropFilter: "blur(10px)" }}
+    <HudPanel
+      title="Exoplanet Database // Discovered Worlds"
+      moduleCode="DATA-MAT"
+      badge={{ text: `${planets.length} RECORDS`, variant: "blue" }}
+      cornerAccent="cyan"
+      noPadding
     >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border)]">
-        <div>
-          <h3 className="text-sm font-semibold text-[var(--foreground)]">Planets</h3>
-          <p className="text-[0.62rem] text-[var(--muted)] mt-0.5">
-            Click a row to view 3D model
-          </p>
-        </div>
-        <span className="text-[0.68rem] text-[var(--muted)]">
-          {planets.length.toLocaleString()} result{planets.length !== 1 ? "s" : ""}
-        </span>
+      {/* Table Subheader */}
+      <div className="flex items-center justify-between px-4 py-2 bg-[#040818]/60 border-b border-[var(--border)]/70 text-[0.62rem] font-mono text-[var(--muted)]">
+        <span>CLICK RECORD TO INITIATE 3D TARGET ANALYSIS</span>
+        <span>DISPLAYING {slice.length} OF {planets.length} WORLDS</span>
       </div>
 
-      {/* Table */}
+      {/* Table Container */}
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
+        <table className="w-full border-collapse font-mono">
           <thead>
-            <tr className="border-b border-[var(--border)]">
+            <tr className="border-b border-[var(--border)] bg-[#050a22]/80">
               {COLUMNS.map((col) => (
-                <th key={col.key} className={thCls} onClick={() => handleSort(col.key)}>
-                  {col.label}
-                  <SortIcon dir={sortKey === col.key ? sortDir : null} />
+                <th
+                  key={col.key}
+                  onClick={() => handleSort(col.key)}
+                  className="px-3 py-2.5 text-left text-[0.62rem] tracking-widest uppercase text-[var(--muted-light)] cursor-pointer select-none hover:text-[var(--accent-cyan)] transition-colors whitespace-nowrap"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>{col.label}</span>
+                    {col.unit && <span className="text-[var(--muted)]">({col.unit})</span>}
+                    <SortIcon dir={sortKey === col.key ? sortDir : null} />
+                  </div>
                 </th>
               ))}
             </tr>
@@ -133,7 +104,7 @@ function DataTableInner({ planets, selectedName, onSelect }: Props) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.18 }}
+              transition={{ duration: 0.15 }}
             >
               {slice.map((planet) => {
                 const isSelected = planet.pl_name === selectedName;
@@ -141,45 +112,48 @@ function DataTableInner({ planets, selectedName, onSelect }: Props) {
                   <motion.tr
                     key={planet.pl_name}
                     onClick={() => onSelect(planet)}
-                    className="border-b border-[var(--border)] border-opacity-40 cursor-pointer select-none"
+                    className="border-b border-[var(--border)]/40 cursor-pointer select-none transition-colors"
                     style={
                       isSelected
                         ? {
-                            background: "rgba(139,92,246,0.12)",
-                            borderLeft: "2px solid #8b5cf6",
+                            background: "rgba(139, 92, 246, 0.15)",
+                            borderLeft: "3px solid #a78bfa",
                           }
-                        : { borderLeft: "2px solid transparent" }
+                        : { borderLeft: "3px solid transparent" }
                     }
-                    whileHover={{ backgroundColor: "rgba(255,255,255,0.04)" }}
-                    transition={{ duration: 0.1 }}
+                    whileHover={{ backgroundColor: "rgba(59, 130, 246, 0.08)" }}
+                    transition={{ duration: 0.08 }}
                   >
                     {COLUMNS.map((col) => {
-                      const raw     = planet[col.key];
-                      const display = col.fmt
-                        ? col.fmt(raw)
-                        : (raw as string | null) ?? "—";
+                      const raw = planet[col.key];
+                      const display = col.fmt ? col.fmt(raw) : (raw as string | null) ?? "—";
                       return (
-                        <td key={col.key} className={tdCls}>
+                        <td key={col.key} className="px-3 py-2 text-xs whitespace-nowrap text-[var(--foreground)]">
                           {col.key === "pl_name" ? (
-                            <span
-                              className="font-medium"
-                              style={{ color: isSelected ? "#c4b5fd" : "var(--accent-cyan)" }}
-                            >
-                              {display}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              {isSelected && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-violet-bright)] animate-pulse" />
+                              )}
+                              <span
+                                className="font-semibold"
+                                style={{ color: isSelected ? "#c4b5fd" : "var(--accent-cyan-bright)" }}
+                              >
+                                {display}
+                              </span>
+                            </div>
                           ) : col.key === "discoverymethod" ? (
                             <span
-                              className="px-1.5 py-0.5 rounded text-[0.62rem] tracking-wide"
+                              className="px-1.5 py-0.5 rounded text-[0.6rem] tracking-wide"
                               style={{
-                                background: "rgba(139,92,246,0.15)",
-                                color: "#c4b5fd",
-                                border: "1px solid rgba(139,92,246,0.25)",
+                                background: "rgba(59, 130, 246, 0.12)",
+                                color: "#93c5fd",
+                                border: "1px solid rgba(59, 130, 246, 0.25)",
                               }}
                             >
                               {display}
                             </span>
                           ) : (
-                            display
+                            <span className="tabular-nums text-slate-300">{display}</span>
                           )}
                         </td>
                       );
@@ -192,30 +166,35 @@ function DataTableInner({ planets, selectedName, onSelect }: Props) {
         </table>
       </div>
 
-      {/* Pagination */}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--border)]">
-        <span className="text-[0.68rem] text-[var(--muted)]">
-          Page {safePage} of {totalPages}
+      {/* Futuristic Pagination Deck */}
+      <div className="flex items-center justify-between px-4 py-2.5 border-t border-[var(--border)] bg-[#040818]/70 font-mono">
+        <span className="text-[0.65rem] text-[var(--muted-light)]">
+          PAGE <span className="text-[var(--accent-cyan-bright)]">{safePage}</span> OF {totalPages}
         </span>
         <div className="flex gap-2">
-          <MotionBtn
+          <motion.button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={safePage <= 1}
+            className="px-3 py-1 rounded text-xs border border-[var(--border)] text-[var(--muted-light)] hover:text-white hover:border-[var(--accent-cyan)] transition-colors disabled:opacity-30 disabled:cursor-default cursor-pointer"
+            whileHover={safePage <= 1 ? {} : { scale: 1.04 }}
+            whileTap={safePage <= 1 ? {} : { scale: 0.96 }}
           >
-            ‹ Prev
-          </MotionBtn>
-          <MotionBtn
+            ‹ PREV
+          </motion.button>
+          <motion.button
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={safePage >= totalPages}
+            className="px-3 py-1 rounded text-xs border border-[var(--border)] text-[var(--muted-light)] hover:text-white hover:border-[var(--accent-cyan)] transition-colors disabled:opacity-30 disabled:cursor-default cursor-pointer"
+            whileHover={safePage >= totalPages ? {} : { scale: 1.04 }}
+            whileTap={safePage >= totalPages ? {} : { scale: 0.96 }}
           >
-            Next ›
-          </MotionBtn>
+            NEXT ›
+          </motion.button>
         </div>
       </div>
-    </div>
+    </HudPanel>
   );
 }
 
-// Re-renders only when planets array, selectedName, or onSelect changes
 const DataTable = memo(DataTableInner);
 export default DataTable;
