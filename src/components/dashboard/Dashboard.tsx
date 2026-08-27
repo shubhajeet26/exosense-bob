@@ -15,6 +15,7 @@ import { LoadingState, EmptyState, ErrorState } from "./States";
 import AiMissionCopilot, { AnnotationStatus } from "./AiMissionCopilot";
 import MissionTelemetryBar from "./MissionTelemetryBar";
 import { type ProfileStatus } from "./PlanetViewer";
+import StarMapExplorer from "../starmap/StarMapExplorer";
 
 const PlanetScatterChart = dynamic(() => import("./PlanetScatterChart"), {
   ssr: false,
@@ -34,6 +35,11 @@ const PlanetViewer = dynamic(() => import("./PlanetViewer"), {
 });
 
 type FetchStatus = "idle" | "loading" | "success" | "error";
+
+interface DashboardProps {
+  activeTab?: "dashboard" | "starmap";
+  onTabChange?: (tab: "dashboard" | "starmap") => void;
+}
 
 function buildQueryString(filters: FilterValues): string {
   const p = toApiParams(filters);
@@ -60,7 +66,10 @@ function filterSummary(f: FilterValues): string {
   return parts.length ? parts.join(", ") : "all planets (default filters)";
 }
 
-export default function Dashboard() {
+export default function Dashboard({
+  activeTab = "dashboard",
+  onTabChange,
+}: DashboardProps) {
   const [filters, setFilters] = useState<FilterValues>(DEFAULT_FILTERS);
   const [planets, setPlanets] = useState<Exoplanet[]>([]);
   const [status, setStatus] = useState<FetchStatus>("idle");
@@ -154,11 +163,21 @@ export default function Dashboard() {
   }, [planets, status, filters, fetchAnnotation]);
 
   // ── Planet Selection & AI Profile ──
-  const handleSelectPlanet = useCallback((planet: Exoplanet) => {
-    setSelectedPlanet((prev) => (prev?.pl_name === planet.pl_name ? null : planet));
+  const handleSelectPlanet = useCallback((planet: Exoplanet | null) => {
+    setSelectedPlanet((prev) => (prev?.pl_name === planet?.pl_name ? null : planet));
   }, []);
 
   const handleClosePlanet = useCallback(() => setSelectedPlanet(null), []);
+
+  const handleOpenObservatory = useCallback(
+    (planet: Exoplanet) => {
+      setSelectedPlanet(planet);
+      if (onTabChange) {
+        onTabChange("dashboard");
+      }
+    },
+    [onTabChange]
+  );
 
   useEffect(() => {
     if (!selectedPlanet) {
@@ -205,103 +224,137 @@ export default function Dashboard() {
   const isLoading = status === "loading";
 
   return (
-    <div className="hud-grid-bg min-h-screen flex flex-col gap-5 w-full max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-5">
-      {/* ── Top Telemetry HUD Ribbon ── */}
-      <MissionTelemetryBar
-        planets={planets}
-        selectedPlanet={selectedPlanet}
-        totalFiltered={planets.length}
-        isLoading={isLoading}
-      />
-
-      {/* ── Mission Control Main Composition ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Left / Center Zone: Main Observational Focal Area (8 cols on desktop) */}
-        <div className="lg:col-span-8 flex flex-col gap-5">
-          {/* Main Focal Display: 3D Planet Observatory IF selected, ELSE Orbital Matrix */}
-          <AnimatePresence mode="wait">
-            {selectedPlanet && (
-              <motion.div
-                key={selectedPlanet.pl_name}
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.3 }}
-              >
-                <PlanetViewer
-                  planet={selectedPlanet}
-                  onClose={handleClosePlanet}
-                  profile={profile}
-                  profileStatus={profileStatus}
-                  profileError={profileError}
-                  score={planetScore}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Orbital Scatter Matrix Chart */}
-          <PlanetScatterChart
+    <div className="hud-grid-bg min-h-screen flex flex-col gap-5 w-full max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8 py-4">
+      {/* ── View 1: Star Map Explorer ── */}
+      {activeTab === "starmap" && (
+        <motion.div
+          key="starmap-view"
+          initial={{ opacity: 0, scale: 0.99 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="w-full"
+        >
+          <StarMapExplorer
             planets={planets}
+            filters={filters}
+            onFilterChange={setFilters}
+            selectedPlanet={selectedPlanet}
             onSelectPlanet={handleSelectPlanet}
+            onOpenObservatory={handleOpenObservatory}
+            profile={profile}
+            profileStatus={profileStatus}
+            profileError={profileError}
           />
-        </div>
+        </motion.div>
+      )}
 
-        {/* Right Zone: AI Mission Copilot & Mission Parameters (4 cols on desktop) */}
-        <div className="lg:col-span-4 flex flex-col gap-5">
-          {/* AI Mission Copilot (Gemini) */}
-          <AiMissionCopilot
-            annotation={annotation}
-            annotationStatus={annotationStatus}
-            annotationError={annotationError}
-            onApplyQuery={setFilters}
-            disabled={isLoading}
-          />
-
-          {/* Mission Parameters / Filters */}
-          <FilterControls
-            values={filters}
-            onChange={setFilters}
+      {/* ── View 2: Mission Control Dashboard ── */}
+      {activeTab === "dashboard" && (
+        <motion.div
+          key="dashboard-view"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="space-y-5"
+        >
+          {/* Top Telemetry HUD Ribbon */}
+          <MissionTelemetryBar
+            planets={planets}
+            selectedPlanet={selectedPlanet}
+            totalFiltered={planets.length}
             isLoading={isLoading}
           />
-        </div>
-      </div>
 
-      {/* ── Lower Command Deck: Discovered Worlds Database Table ── */}
-      <div className="w-full">
-        <AnimatePresence mode="wait">
-          {status === "loading" && (
-            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <LoadingState />
-            </motion.div>
-          )}
-          {status === "error" && (
-            <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <ErrorState message={errorMsg} />
-            </motion.div>
-          )}
-          {status === "success" && planets.length === 0 && (
-            <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <EmptyState />
-            </motion.div>
-          )}
-          {status === "success" && planets.length > 0 && (
-            <motion.div
-              key="table"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-            >
-              <DataTable
+          {/* Mission Control Main Composition */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+            {/* Left / Center Zone: Main Observational Focal Area (8 cols) */}
+            <div className="lg:col-span-8 flex flex-col gap-5">
+              {/* Target Observatory (if selected) */}
+              <AnimatePresence mode="wait">
+                {selectedPlanet && (
+                  <motion.div
+                    key={selectedPlanet.pl_name}
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    <PlanetViewer
+                      planet={selectedPlanet}
+                      onClose={handleClosePlanet}
+                      profile={profile}
+                      profileStatus={profileStatus}
+                      profileError={profileError}
+                      score={planetScore}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Orbital Scatter Matrix Chart */}
+              <PlanetScatterChart
                 planets={planets}
-                selectedName={selectedPlanet?.pl_name ?? null}
-                onSelect={handleSelectPlanet}
+                onSelectPlanet={handleSelectPlanet}
               />
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+            </div>
+
+            {/* Right Zone: AI Mission Copilot & Mission Parameters (4 cols) */}
+            <div className="lg:col-span-4 flex flex-col gap-5">
+              <AiMissionCopilot
+                annotation={annotation}
+                annotationStatus={annotationStatus}
+                annotationError={annotationError}
+                onApplyQuery={setFilters}
+                disabled={isLoading}
+              />
+
+              <FilterControls
+                values={filters}
+                onChange={setFilters}
+                isLoading={isLoading}
+              />
+            </div>
+          </div>
+
+          {/* Lower Command Deck: Discovered Worlds Database Table */}
+          <div className="w-full">
+            <AnimatePresence mode="wait">
+              {status === "loading" && (
+                <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <LoadingState />
+                </motion.div>
+              )}
+              {status === "error" && (
+                <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <ErrorState message={errorMsg} />
+                </motion.div>
+              )}
+              {status === "success" && planets.length === 0 && (
+                <motion.div key="empty" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <EmptyState />
+                </motion.div>
+              )}
+              {status === "success" && planets.length > 0 && (
+                <motion.div
+                  key="table"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <DataTable
+                    planets={planets}
+                    selectedName={selectedPlanet?.pl_name ?? null}
+                    onSelect={handleSelectPlanet}
+                  />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+      )}
     </div>
   );
 }

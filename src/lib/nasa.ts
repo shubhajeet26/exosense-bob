@@ -21,6 +21,8 @@ export interface Exoplanet {
   st_rad: number | null;   // Stellar radius (solar radii)
   st_mass: number | null;  // Stellar mass (solar masses)
   sy_dist: number | null;  // System distance from Earth (parsecs)
+  ra: number | null;       // Right Ascension (degrees)
+  dec: number | null;      // Declination (degrees)
 }
 
 export interface FilterParams {
@@ -36,7 +38,7 @@ export interface FilterParams {
 // ─── ADQL column list ─────────────────────────────────────────────────────────
 
 const COLUMNS =
-  "pl_name,hostname,disc_year,discoverymethod,pl_rade,pl_masse,pl_orbper,pl_orbsmax,pl_eqt,st_teff,st_rad,st_mass,sy_dist";
+  "pl_name,hostname,disc_year,discoverymethod,pl_rade,pl_masse,pl_orbper,pl_orbsmax,pl_eqt,st_teff,st_rad,st_mass,sy_dist,ra,dec";
 
 // ─── Query builder ────────────────────────────────────────────────────────────
 
@@ -99,6 +101,8 @@ type RawRow = {
   st_rad: number | null;
   st_mass: number | null;
   sy_dist: number | null;
+  ra: number | null;
+  dec: number | null;
 };
 
 // ─── Fetch function ───────────────────────────────────────────────────────────
@@ -149,6 +153,8 @@ export async function fetchExoplanets(
     st_rad: toNum(r.st_rad),
     st_mass: toNum(r.st_mass),
     sy_dist: toNum(r.sy_dist),
+    ra: toNum(r.ra),
+    dec: toNum(r.dec),
   }));
 }
 

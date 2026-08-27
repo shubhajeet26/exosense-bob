@@ -15,6 +15,7 @@ const IntroSequence = dynamic(() => import("@/components/IntroSequence"), {
 
 export default function Home() {
   const [introComplete, setIntroComplete] = useState(false);
+  const [activeTab, setActiveTab] = useState<"dashboard" | "starmap">("dashboard");
 
   return (
     <>
@@ -29,9 +30,9 @@ export default function Home() {
       {/* ── Main app shell ── */}
       {introComplete && (
         <div className="relative z-10 flex flex-col min-h-screen">
-          <AppHeader />
+          <AppHeader activeTab={activeTab} onTabChange={setActiveTab} />
           <main className="flex-1">
-            <Dashboard />
+            <Dashboard activeTab={activeTab} onTabChange={setActiveTab} />
           </main>
         </div>
       )}
