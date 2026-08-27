@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
@@ -172,6 +172,145 @@ export default function PlanetObservatory({
       .slice(0, 6);
   }, [allPlanets, searchQuery]);
 
+  // Canvas Mission Card Export
+  const handleExportMissionCard = useCallback(() => {
+    if (!activePlanet) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = 1200;
+    canvas.height = 630;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Background
+    const bgGrad = ctx.createLinearGradient(0, 0, 1200, 630);
+    bgGrad.addColorStop(0, "#02040a");
+    bgGrad.addColorStop(0.5, "#060c24");
+    bgGrad.addColorStop(1, "#020512");
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, 1200, 630);
+
+    // Frame border
+    ctx.strokeStyle = "rgba(6, 182, 212, 0.4)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(40, 40, 1120, 550);
+
+    // Corner brackets
+    ctx.strokeStyle = "#06b6d4";
+    ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(30, 60); ctx.lineTo(30, 30); ctx.lineTo(60, 30); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(1140, 30); ctx.lineTo(1170, 30); ctx.lineTo(1170, 60); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(30, 570); ctx.lineTo(30, 600); ctx.lineTo(60, 600); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(1140, 600); ctx.lineTo(1170, 600); ctx.lineTo(1170, 570); ctx.stroke();
+
+    // Header Title
+    ctx.font = "bold 20px monospace";
+    ctx.fillStyle = "#22d3ee";
+    ctx.fillText("EXOSENSE // PLANETARY INTELLIGENCE CARD", 70, 90);
+
+    ctx.font = "14px monospace";
+    ctx.fillStyle = "#94a3b8";
+    ctx.fillText("VERIFIED NASA EXOPLANET ARCHIVE TELEMETRY", 70, 115);
+
+    // Planet Name
+    ctx.font = "bold 44px monospace";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText(activePlanet.pl_name, 70, 180);
+
+    // Subtitle
+    ctx.font = "16px monospace";
+    ctx.fillStyle = "#a78bfa";
+    ctx.fillText(`HOST SYSTEM: ${activePlanet.hostname} · DISC. ${activePlanet.disc_year ?? "Unknown"} (${activePlanet.discoverymethod ?? "Method ?"})`, 70, 215);
+
+    // Score Badge Box
+    ctx.fillStyle = "rgba(6, 182, 212, 0.15)";
+    ctx.strokeStyle = "rgba(6, 182, 212, 0.5)";
+    ctx.lineWidth = 1.5;
+    ctx.fillRect(850, 70, 280, 120);
+    ctx.strokeRect(850, 70, 280, 120);
+
+    ctx.font = "14px monospace";
+    ctx.fillStyle = "#94a3b8";
+    ctx.fillText("EXOSENSE SCORE", 870, 105);
+
+    ctx.font = "bold 48px monospace";
+    ctx.fillStyle = "#22d3ee";
+    ctx.fillText(`${score?.score ?? "—"}/100`, 870, 160);
+
+    // 4 Telemetry Spec Boxes
+    const metrics = [
+      { label: "PLANETARY RADIUS", val: activePlanet.pl_rade != null ? `${activePlanet.pl_rade.toFixed(2)} R⊕` : "UNAVAILABLE" },
+      { label: "EQUILIBRIUM TEMP", val: activePlanet.pl_eqt != null ? `${activePlanet.pl_eqt.toFixed(0)} K` : "UNAVAILABLE" },
+      { label: "DISTANCE FROM EARTH", val: activePlanet.sy_dist != null ? `${activePlanet.sy_dist.toFixed(1)} pc` : "UNAVAILABLE" },
+      { label: "ORBITAL PERIOD", val: activePlanet.pl_orbper != null ? `${activePlanet.pl_orbper.toFixed(2)} d` : "UNAVAILABLE" },
+    ];
+
+    metrics.forEach((m, idx) => {
+      const x = 70 + idx * 270;
+      const y = 255;
+      ctx.fillStyle = "rgba(13, 20, 43, 0.85)";
+      ctx.strokeStyle = "#172346";
+      ctx.lineWidth = 1;
+      ctx.fillRect(x, y, 250, 85);
+      ctx.strokeRect(x, y, 250, 85);
+
+      ctx.font = "11px monospace";
+      ctx.fillStyle = "#64748b";
+      ctx.fillText(m.label, x + 15, y + 28);
+
+      ctx.font = "bold 18px monospace";
+      ctx.fillStyle = "#f1f5f9";
+      ctx.fillText(m.val, x + 15, y + 60);
+    });
+
+    // AI Summary Box
+    ctx.fillStyle = "rgba(5, 10, 34, 0.9)";
+    ctx.strokeStyle = "rgba(139, 92, 246, 0.4)";
+    ctx.fillRect(70, 365, 1060, 160);
+    ctx.strokeRect(70, 365, 1060, 160);
+
+    ctx.font = "bold 13px monospace";
+    ctx.fillStyle = "#a78bfa";
+    ctx.fillText("AI MISSION COPILOT INTELLIGENCE SYNTHESIS", 90, 395);
+
+    ctx.font = "14px sans-serif";
+    ctx.fillStyle = "#cbd5e1";
+    const summaryText = profile || "Planetary characteristics and orbital parameters cataloged by NASA Exoplanet Archive and verified by Exosense.";
+    
+    // Simple text wrapper
+    const words = summaryText.split(" ");
+    let line = "";
+    let y = 425;
+    for (let n = 0; n < words.length; n++) {
+      const testLine = line + words[n] + " ";
+      const metricsText = ctx.measureText(testLine);
+      if (metricsText.width > 1000 && n > 0) {
+        ctx.fillText(line, 90, y);
+        line = words[n] + " ";
+        y += 24;
+        if (y > 495) break;
+      } else {
+        line = testLine;
+      }
+    }
+    if (y <= 495) ctx.fillText(line, 90, y);
+
+    // Footer Disclaimer
+    ctx.font = "11px monospace";
+    ctx.fillStyle = "#64748b";
+    ctx.fillText("EXOSENSE EXPLORATION PLATFORM · DATA SOURCE: NASA EXOPLANET ARCHIVE · ILLUSTRATIVE 3D MODEL", 70, 565);
+
+    // Download trigger
+    canvas.toBlob((blob) => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Exosense_MissionCard_${activePlanet.pl_name.replace(/\s+/g, "_")}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  }, [activePlanet, score, profile]);
+
   if (!activePlanet) {
     return (
       <div className="w-full h-[600px] flex flex-col items-center justify-center bg-[#01030b] border border-[var(--border)] rounded-lg font-mono text-xs text-[var(--muted)] gap-3">
@@ -257,6 +396,14 @@ export default function PlanetObservatory({
 
         {/* Right: Quick Action Navigation */}
         <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleExportMissionCard}
+            className="px-3 py-1.5 rounded bg-[var(--accent-cyan)]/20 hover:bg-[var(--accent-cyan)]/30 border border-[var(--accent-cyan)]/40 text-[var(--accent-cyan-bright)] text-xs font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 shadow-sm"
+            title="Download PNG Planetary Mission Card"
+          >
+            <span>📥 Export Card</span>
+          </button>
+
           {onToggleFavorite && (
             <button
               onClick={() => onToggleFavorite(activePlanet.pl_name)}
